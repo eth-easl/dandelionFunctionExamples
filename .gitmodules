@@ -1,0 +1,3 @@
+[submodule "dandelionFunctionInterface"]
+	path = dandelionFunctionInterface
+	url = git@github.com:eth-easl/dandelionFunctionInterface.git
