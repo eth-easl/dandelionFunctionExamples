@@ -1,20 +1,20 @@
+set(CMAKE_VERSION 3.13)
 cmake_minimum_required(VERSION ${CMAKE_VERSION})
 
-set(LIBRARY_BASIC "basic")
+# prevent in-source builds
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+  message(FATAL_ERROR "In-source build detected")
+endif()
 
-add_library(${LIBRARY_BASIC} SHARED
-  basic/basic.c
-)
-target_include_directories(${LIBRARY_BASIC} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/basic)
-# compile options, set O0 to make sure the code is not unexpectedly optimized
-target_compile_options(${LIBRARY_BASIC} PRIVATE ${NOCAP_COMPILE_FLAGS} -O0)
-target_link_options(${LIBRARY_BASIC} PRIVATE ${NOCAP_LINK_FLAGS})
+project(function_examples LANGUAGES C ASM)
 
-set(EXECUTABLE "wrapper")
-add_executable(${EXECUTABLE}
-  wrapper/wrapperMain.c
-)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface/functionInterface" functionInterface)
 
-target_compile_options(${EXECUTABLE} PRIVATE ${NOCAP_COMPILE_FLAGS} -static -O0)
-target_link_options(${EXECUTABLE} PRIVATE ${NOCAP_LINK_FLAGS} -static -fno-builtin -nostdlib -e main)
-target_link_libraries(${EXECUTABLE} PRIVATE ioLib)
+# cheri compile flags
+set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
+set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
+
+# add folders with function examples
+add_subdirectory(basic)
+add_subdirectory(matmul)
+add_subdirectory(wrapper)

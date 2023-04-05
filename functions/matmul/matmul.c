@@ -8,30 +8,18 @@
 // Project Internal Libraries
 #include "dandelionIO.h"
 
-// int test_initialized = 5;
-// int test_uninitialized;
-// int test_inFunc = 6;
-
-// void testFunc(void){
-//   test_inFunc = 9;
-// }
-
+// takes two inputs, an int with the number of rows/columns of a square matrix
+// and a square matrix of int64s as well as a third input
+// that is big enough to store the output (to avoid malloc for this simple test)
 int main(void) {
-  // test_initialized = 7;
-  // test_uninitialized = 8;
-  // testFunc();
-  // int outputNumber = 11* (*inputPointer);
-
-  size_t dimSize = getInputSize(0);
-  int matDim = *(int*)getInputPointer(0);
-  size_t matSize = getInputSize(1);
+  size_t inMatSize = getInputSize(1);
   int64_t* inMat = getInputPointer(1);
-
-  // slight cheat for now, as we don't have malloc yet.
-  int64_t* outMat = (int64_t*)((char*)inMat + matSize);
+  size_t outMatSize = getInputSize(2);
+  int64_t* outMat = getInputPointer(2);
+  int matDim = inMatSize / sizeof(int64_t);
 
   addOutput();
-  setOutputSize(0, matSize);
+  setOutputSize(0, outMatSize);
   setOutputPointer(0, outMat);
 
   for (int i = 0; i < matDim; i++) {
