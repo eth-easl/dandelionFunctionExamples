@@ -8,11 +8,11 @@ endif()
 
 project(function_examples LANGUAGES C ASM)
 
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface/functionInterface" functionInterface)
-
 # cheri compile flags
 set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
 set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface/functionInterface" functionInterface)
 
 # add folders with function examples
 add_subdirectory(basic)
