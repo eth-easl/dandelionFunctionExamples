@@ -12,20 +12,25 @@
 // and a square matrix of int64s as well as a third input
 // that is big enough to store the output (to avoid malloc for this simple test)
 int main(void) {
+  int64_t* matDimPointer = getInputPointer(0);
   size_t inMatSize = getInputSize(1);
   int64_t* inMat = getInputPointer(1);
   size_t outMatSize = getInputSize(2);
   int64_t* outMat = getInputPointer(2);
-  int matDim = inMatSize / sizeof(int64_t);
+  int64_t matDim = *matDimPointer;
 
-  addOutput();
-  setOutputSize(0, outMatSize);
-  setOutputPointer(0, outMat);
+  if (matDim * matDim * sizeof(int64_t) == inMatSize &&
+      inMatSize == outMatSize) {
+    addOutput();
+    setOutputSize(0, outMatSize);
+    setOutputPointer(0, outMat);
 
-  for (int i = 0; i < matDim; i++) {
-    for (int j = 0; j < matDim; j++) {
-      for (int k = 0; k < matDim; k++) {
-        outMat[i * matDim + j] += inMat[i * matDim + k] * inMat[j * matDim + k];
+    for (int i = 0; i < matDim; i++) {
+      for (int j = 0; j < matDim; j++) {
+        for (int k = 0; k < matDim; k++) {
+          outMat[i * matDim + j] +=
+              inMat[i * matDim + k] * inMat[j * matDim + k];
+        }
       }
     }
   }
