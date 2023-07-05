@@ -1,3 +1,8 @@
 [submodule "dandelionFunctionInterface"]
 	path = dandelionFunctionInterface
 	url = git@github.com:eth-easl/dandelionFunctionInterface.git
+	branch = main
+[submodule "mlibc"]
+	path = mlibc
+	url = git@github.com:eth-easl/mlibc.git
+	branch = dandelion
