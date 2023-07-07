@@ -1,8 +1,17 @@
 # Functions
 
 This folder contains a series of functions used to test basic functionality.
-The functions are split into multiple libraries to also test that they can
-be loaded and removed independently.
+The functions are split into multiple executables that can be built individually.
+Some functions depend on the function interface directly while others use it 
+through mlibc.
 
-Currently we have the following libraries:
-- **Basic**, functions to test minimal functionality.
+# Building the C functions
+The cmake build process will build the function interface, libc and the functions.
+To do so cmake needs to know that it needs to use the cross compile file dandelion.
+Additionally, cmake and needs to know the platform to build for (cheri, mmu_freebsd, mmu_linux).
+From the top folder functions can be built with:
+```
+mkdir build
+cd build
+cmake -DDANDELION_PLATFORM=<platform> -DTARGET_CPU=<target arch> ../functions
+```

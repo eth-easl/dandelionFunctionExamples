@@ -1,4 +1,7 @@
-#include "dandelionIO.h"
+#include "dandelion/runtime.h"
 
 // most basic function that does nothing except for returning
-int main(void) { function_exit(); }
+void _start(void) {
+  dandelion_init();
+  dandelion_exit(0);
+}

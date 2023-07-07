@@ -1,0 +1,17 @@
+[binaries]
+c = '${CMAKE_C_COMPILER}'
+cpp = '${CMAKE_CXX_COMPILER}'
+ld = '${CMAKE_LINKER}' 
+ar = '${CMAKE_AR}'
+
+[host_machine]
+system = 'dandelion'
+endian = 'little'
+cpu_family = '${TARGET_CPU}' 
+cpu = '${TARGET_CPU}'
+
+[built-in options]
+default_library = 'static'
+
+[cmake]
+DANDELION_PLATFORM = '${DANDELION_PLATFORM}'
