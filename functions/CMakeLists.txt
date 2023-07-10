@@ -17,33 +17,53 @@ set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR "${TARGET_CPU}")
 
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
-# execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_PATH)
-# cmake_path(SET CMAKE_COMP_LIB_PATH "${NATIVE_PATH}")
-# cmake_path(GET CMAKE_COMP_LIB_PATH PARENT_PATH LIB_FOLDER)
-# find_library(COMPILER_LIB NAMES gcc clang REQUIRED HINTS "${LIB_FOLDER}")
-execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE)
-cmake_path(SET COMP_INCLUDE "${NATIVE_INCLUDE}")
+execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
+cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
+foreach(LANG C CXX)
+  set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
+endforeach()
+
+add_library(compiler_lib INTERFACE IMPORTED)
+set_target_properties(compiler_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
+target_compile_options(compiler_lib INTERFACE -nostdinc)
+target_link_options(compiler_lib INTERFACE -nostdlib)
 
 # prepare mlibc 
 # make cross file
 configure_file(cross_template.txt crossfile.txt)
 include(ExternalProject)
 ExternalProject_Add(mlibc
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mlibc
-    CONFIGURE_COMMAND meson setup --cross-file ${CMAKE_CURRENT_BINARY_DIR}/crossfile.txt -Dprefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR>
-    BUILD_COMMAND ninja -C <BINARY_DIR>
-    BUILD_ALWAYS TRUE
-    INSTALL_COMMAND meson install -C <BINARY_DIR>
+SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mlibc
+CONFIGURE_COMMAND meson setup --cross-file ${CMAKE_CURRENT_BINARY_DIR}/crossfile.txt -Dprefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR>
+BUILD_COMMAND ninja -C <BINARY_DIR>
+BUILD_ALWAYS TRUE
+INSTALL_COMMAND meson install --no-rebuild --only-changed -C <BINARY_DIR>
 )
 ExternalProject_Get_Property(mlibc INSTALL_DIR)
-include_directories(SYSTEM "${INSTALL_DIR}/include")
-# include_directories("${COMP_INCLUDE}")
-foreach(LANG C CXX)
-    set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
-    # set(CMAKE_${LANG}_STANDARD_LIBRARIES ${MLIBC} ) 
-endforeach()
-add_compile_options(-nostdinc) 
-add_link_options(-nostdlib -rpath ${MLIBC_INCLUDE_DIR}/lib)
+
+add_library(dlibc OBJECT IMPORTED)
+add_dependencies(dlibc mlibc)
+set(MLIBC_OBJ 
+  "${INSTALL_DIR}/lib/crt1.o"
+  "${INSTALL_DIR}/lib/crti.o"
+  "${INSTALL_DIR}/lib/crtn.o")
+set_target_properties(dlibc PROPERTIES IMPORTED_OBJECTS "${MLIBC_OBJ}")
+file(MAKE_DIRECTORY "${INSTALL_DIR}/include")
+set_target_properties(dlibc PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INSTALL_DIR}/include")
+set(MLIBC_LIBS
+  "${INSTALL_DIR}/lib/libc.a"
+  "${INSTALL_DIR}/lib/libcrypt.a"
+  "${INSTALL_DIR}/lib/libdl.a"
+  "${INSTALL_DIR}/lib/libm.a"
+  "${INSTALL_DIR}/lib/libpthread.a"
+  "${INSTALL_DIR}/lib/libresolv.a"
+  "${INSTALL_DIR}/lib/librt.a"
+  "${INSTALL_DIR}/lib/libutil.a"
+)
+set_target_properties(dlibc PROPERTIES IMPORTED_LINK_INTERFACE_LIBRARIES "${MLIBC_LIBS}")
+set_target_properties(dlibc PROPERTIES IMPORTED_LINK_DEPENDENT_LIBRARIES compiler_lib)
+target_compile_options(dlibc INTERFACE -nostdinc)
+target_link_options(dlibc INTERFACE -nostdlib)
 
 # cheri compile flags
 if(${DANDELION_PLATFORM} STREQUAL "cheri")

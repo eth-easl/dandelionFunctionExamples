@@ -15,3 +15,5 @@ mkdir build
 cd build
 cmake -DDANDELION_PLATFORM=<platform> -DTARGET_CPU=<target arch> ../functions
 ```
+The mlibc build currently only seems to work with clang.
+To set this up set CC=clang and CXX=clang++
