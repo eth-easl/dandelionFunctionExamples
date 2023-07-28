@@ -1,4 +1,4 @@
-set(CMAKE_VERSION 3.13)
+set(CMAKE_VERSION 3.20)
 cmake_minimum_required(VERSION ${CMAKE_VERSION})
 
 # prevent in-source builds
@@ -10,6 +10,8 @@ endif()
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+
 project(function_examples LANGUAGES C CXX ASM)
 
 # set up build for using mlbic instead of other standard lib
@@ -19,14 +21,17 @@ set(CMAKE_SYSTEM_PROCESSOR "${TARGET_CPU}")
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
 execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
 cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
+execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
+cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
 foreach(LANG C CXX)
   set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
 endforeach()
 
-add_library(compiler_lib INTERFACE IMPORTED)
+add_library(compiler_lib SHARED IMPORTED)
 set_target_properties(compiler_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
+set_target_properties(compiler_lib PROPERTIES IMPORTED_LOCATION "${COMP_RTLIB}")
 target_compile_options(compiler_lib INTERFACE -nostdinc)
-target_link_options(compiler_lib INTERFACE -nostdlib)
+target_link_options(compiler_lib INTERFACE -nostdlib -Wl,--image-base=0)
 
 # prepare mlibc 
 # make cross file
@@ -49,7 +54,7 @@ set(MLIBC_OBJ
   "${INSTALL_DIR}/lib/crtn.o")
 set_target_properties(dlibc PROPERTIES IMPORTED_OBJECTS "${MLIBC_OBJ}")
 file(MAKE_DIRECTORY "${INSTALL_DIR}/include")
-set_target_properties(dlibc PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INSTALL_DIR}/include")
+target_include_directories(dlibc INTERFACE "${INSTALL_DIR}/include")
 set(MLIBC_LIBS
   "${INSTALL_DIR}/lib/libc.a"
   "${INSTALL_DIR}/lib/libcrypt.a"
@@ -60,13 +65,12 @@ set(MLIBC_LIBS
   "${INSTALL_DIR}/lib/librt.a"
   "${INSTALL_DIR}/lib/libutil.a"
 )
-set_target_properties(dlibc PROPERTIES IMPORTED_LINK_INTERFACE_LIBRARIES "${MLIBC_LIBS}")
-set_target_properties(dlibc PROPERTIES IMPORTED_LINK_DEPENDENT_LIBRARIES compiler_lib)
+target_link_libraries(dlibc INTERFACE compiler_lib ${MLIBC_LIBS})
 target_compile_options(dlibc INTERFACE -nostdinc)
 target_link_options(dlibc INTERFACE -nostdlib)
 
 # cheri compile flags
-if(${DANDELION_PLATFORM} STREQUAL "cheri")
+if("${DANDELION_PLATFORM}" STREQUAL "cheri")
 set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
 set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
 add_compile_options(${NOCAP_COMPILE_FLAGS})
@@ -77,6 +81,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" fun
 # add folders with function examples
 # add_subdirectory(access)
 add_subdirectory(basic)
+add_subdirectory(matmac)
 add_subdirectory(matmul)
 add_subdirectory(stdio)
 add_subdirectory(files)
