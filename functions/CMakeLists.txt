@@ -25,6 +25,7 @@ execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIA
 cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
 foreach(LANG C CXX)
   set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
+  set(CMAKE_${LANG}_IMPLICIT_LINK_DIRECTORIES ${COMP_RTLIB})
 endforeach()
 
 add_library(compiler_lib SHARED IMPORTED)
@@ -41,29 +42,31 @@ ExternalProject_Add(mlibc
 SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mlibc
 CONFIGURE_COMMAND meson setup --cross-file ${CMAKE_CURRENT_BINARY_DIR}/crossfile.txt -Dprefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR>
 BUILD_COMMAND ninja -C <BINARY_DIR>
-BUILD_ALWAYS TRUE
-INSTALL_COMMAND meson install --no-rebuild --only-changed -C <BINARY_DIR>
+# Enable when working on the libc to make sure it is freshly compiled
+# BUILD_ALWAYS TRUE
+INSTALL_COMMAND meson install -C <BINARY_DIR> --no-rebuild --only-changed --quiet
 )
 ExternalProject_Get_Property(mlibc INSTALL_DIR)
+set(MLIBC_INSTALL_DIR ${INSTALL_DIR})
 
 add_library(dlibc OBJECT IMPORTED)
 add_dependencies(dlibc mlibc)
 set(MLIBC_OBJ 
-  "${INSTALL_DIR}/lib/crt1.o"
-  "${INSTALL_DIR}/lib/crti.o"
-  "${INSTALL_DIR}/lib/crtn.o")
+  "${MLIBC_INSTALL_DIR}/lib/crt1.o"
+  "${MLIBC_INSTALL_DIR}/lib/crti.o"
+  "${MLIBC_INSTALL_DIR}/lib/crtn.o")
 set_target_properties(dlibc PROPERTIES IMPORTED_OBJECTS "${MLIBC_OBJ}")
-file(MAKE_DIRECTORY "${INSTALL_DIR}/include")
-target_include_directories(dlibc INTERFACE "${INSTALL_DIR}/include")
+file(MAKE_DIRECTORY "${MLIBC_INSTALL_DIR}/include")
+target_include_directories(dlibc INTERFACE "${MLIBC_INSTALL_DIR}/include")
 set(MLIBC_LIBS
-  "${INSTALL_DIR}/lib/libc.a"
-  "${INSTALL_DIR}/lib/libcrypt.a"
-  "${INSTALL_DIR}/lib/libdl.a"
-  "${INSTALL_DIR}/lib/libm.a"
-  "${INSTALL_DIR}/lib/libpthread.a"
-  "${INSTALL_DIR}/lib/libresolv.a"
-  "${INSTALL_DIR}/lib/librt.a"
-  "${INSTALL_DIR}/lib/libutil.a"
+  "${MLIBC_INSTALL_DIR}/lib/libc.a"
+  "${MLIBC_INSTALL_DIR}/lib/libcrypt.a"
+  "${MLIBC_INSTALL_DIR}/lib/libdl.a"
+  "${MLIBC_INSTALL_DIR}/lib/libm.a"
+  "${MLIBC_INSTALL_DIR}/lib/libpthread.a"
+  "${MLIBC_INSTALL_DIR}/lib/libresolv.a"
+  "${MLIBC_INSTALL_DIR}/lib/librt.a"
+  "${MLIBC_INSTALL_DIR}/lib/libutil.a"
 )
 target_link_libraries(dlibc INTERFACE compiler_lib ${MLIBC_LIBS})
 target_compile_options(dlibc INTERFACE -nostdinc)

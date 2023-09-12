@@ -6,7 +6,7 @@ add_executable(${EXECUTABLE}
   fileio.c
 )
 
-add_dependencies(${EXECUTABLE} mlibc)
+add_dependencies(${EXECUTABLE} dlibc)
 
 target_compile_options(${EXECUTABLE} PRIVATE ${NOCAP_COMPILE_FLAGS} -static -O0)
 target_link_options(${EXECUTABLE} PRIVATE ${NOCAP_LINK_FLAGS} -static)
