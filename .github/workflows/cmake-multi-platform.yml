@@ -43,7 +43,7 @@ jobs:
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_C_COMPILER=clang
-        -S ${{ github.workspace }}
+        -S ${{ github.workspace/functions/ }}
         -DDANDELION_PLATFORM=matrix.platform
         -DTARGET_CPU=matrix.cpu
 
