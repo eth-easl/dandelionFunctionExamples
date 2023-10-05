@@ -6,33 +6,26 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source build detected")
 endif()
 
-# make sure no libraries from the host platform are used
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-
 project(function_examples LANGUAGES C CXX ASM)
 
-# set up build for using mlbic instead of other standard lib
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR "${TARGET_CPU}")
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+else()
+  message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_${LANG}_COMPILER_ID}")
+endif()
 
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
-execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
-cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
-execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
-cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
-foreach(LANG C CXX)
-  set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
-  set(CMAKE_${LANG}_IMPLICIT_LINK_DIRECTORIES ${COMP_RTLIB})
-endforeach()
+# execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
+# cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
+# foreach(LANG C CXX)
+# set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
+# endforeach()
 
-add_library(compiler_lib SHARED IMPORTED)
-set_target_properties(compiler_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
-set_target_properties(compiler_lib PROPERTIES IMPORTED_LOCATION "${COMP_RTLIB}")
-target_compile_options(compiler_lib INTERFACE -nostdinc)
-target_link_options(compiler_lib INTERFACE -nostdlib -Wl,--image-base=0)
+# add_library(compiler_lib STATIC IMPORTED)
+# set_target_properties(compiler_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
+# set_target_properties(compiler_lib PROPERTIES IMPORTED_LOCATION "${COMP_RTLIB}")
+# target_compile_options(compiler_lib INTERFACE -nostdinc)
+# target_link_options(compiler_lib INTERFACE -nostdlib -Wl)
+# target_link_options(compiler_lib INTERFACE -nostdlib -Wl --image-base=0)
 
 # prepare mlibc 
 # make cross file
@@ -48,6 +41,10 @@ INSTALL_COMMAND meson install -C <BINARY_DIR> --no-rebuild --only-changed --quie
 )
 ExternalProject_Get_Property(mlibc INSTALL_DIR)
 set(MLIBC_INSTALL_DIR ${INSTALL_DIR})
+
+# mlibc can depend on compiler runtime library so that also needs to be linked
+execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
+cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
 
 add_library(dlibc OBJECT IMPORTED)
 add_dependencies(dlibc mlibc)
@@ -67,9 +64,9 @@ set(MLIBC_LIBS
   "${MLIBC_INSTALL_DIR}/lib/libresolv.a"
   "${MLIBC_INSTALL_DIR}/lib/librt.a"
   "${MLIBC_INSTALL_DIR}/lib/libutil.a"
+  ${COMP_RTLIB}
 )
-target_link_libraries(dlibc INTERFACE compiler_lib ${MLIBC_LIBS})
-target_compile_options(dlibc INTERFACE -nostdinc)
+target_link_libraries(dlibc INTERFACE ${RUNTIME_LIB} ${MLIBC_LIBS})
 target_link_options(dlibc INTERFACE -nostdlib)
 
 # cheri compile flags
