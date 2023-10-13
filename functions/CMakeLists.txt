@@ -6,11 +6,15 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source build detected")
 endif()
 
+# we are cross-compiling; prevents:
+# https://stackoverflow.com/questions/53633705/cmake-the-c-compiler-is-not-able-to-compile-a-simple-test-program
+set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+
 project(function_examples LANGUAGES C CXX ASM)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 else()
-  message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_${LANG}_COMPILER_ID}")
+  message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_C_COMPILER_ID}")
 endif()
 
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
@@ -27,54 +31,54 @@ endif()
 # target_link_options(compiler_lib INTERFACE -nostdlib -Wl)
 # target_link_options(compiler_lib INTERFACE -nostdlib -Wl --image-base=0)
 
-# prepare mlibc 
-# make cross file
-configure_file(cross_template.txt crossfile.txt)
-include(ExternalProject)
-ExternalProject_Add(mlibc
-SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mlibc
-CONFIGURE_COMMAND meson setup --cross-file ${CMAKE_CURRENT_BINARY_DIR}/crossfile.txt -Dprefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR>
-BUILD_COMMAND ninja -C <BINARY_DIR>
-# Enable when working on the libc to make sure it is freshly compiled
-# BUILD_ALWAYS TRUE
-INSTALL_COMMAND meson install -C <BINARY_DIR> --no-rebuild --only-changed --quiet
-)
-ExternalProject_Get_Property(mlibc INSTALL_DIR)
-set(MLIBC_INSTALL_DIR ${INSTALL_DIR})
+# # prepare mlibc 
+# # make cross file
+# configure_file(cross_template.txt crossfile.txt)
+# include(ExternalProject)
+# ExternalProject_Add(mlibc
+# SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../mlibc
+# CONFIGURE_COMMAND meson setup --cross-file ${CMAKE_CURRENT_BINARY_DIR}/crossfile.txt -Dprefix=<INSTALL_DIR> <BINARY_DIR> <SOURCE_DIR>
+# BUILD_COMMAND ninja -C <BINARY_DIR>
+# # Enable when working on the libc to make sure it is freshly compiled
+# # BUILD_ALWAYS TRUE
+# INSTALL_COMMAND meson install -C <BINARY_DIR> --no-rebuild --only-changed --quiet
+# )
+# ExternalProject_Get_Property(mlibc INSTALL_DIR)
+# set(MLIBC_INSTALL_DIR ${INSTALL_DIR})
 
-# mlibc can depend on compiler runtime library so that also needs to be linked
-execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
-cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
+# # mlibc can depend on compiler runtime library so that also needs to be linked
+# execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
+# cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
 
-add_library(dlibc OBJECT IMPORTED)
-add_dependencies(dlibc mlibc)
-set(MLIBC_OBJ 
-  "${MLIBC_INSTALL_DIR}/lib/crt1.o"
-  "${MLIBC_INSTALL_DIR}/lib/crti.o"
-  "${MLIBC_INSTALL_DIR}/lib/crtn.o")
-set_target_properties(dlibc PROPERTIES IMPORTED_OBJECTS "${MLIBC_OBJ}")
-file(MAKE_DIRECTORY "${MLIBC_INSTALL_DIR}/include")
-target_include_directories(dlibc INTERFACE "${MLIBC_INSTALL_DIR}/include")
-set(MLIBC_LIBS
-  "${MLIBC_INSTALL_DIR}/lib/libc.a"
-  "${MLIBC_INSTALL_DIR}/lib/libcrypt.a"
-  "${MLIBC_INSTALL_DIR}/lib/libdl.a"
-  "${MLIBC_INSTALL_DIR}/lib/libm.a"
-  "${MLIBC_INSTALL_DIR}/lib/libpthread.a"
-  "${MLIBC_INSTALL_DIR}/lib/libresolv.a"
-  "${MLIBC_INSTALL_DIR}/lib/librt.a"
-  "${MLIBC_INSTALL_DIR}/lib/libutil.a"
-  ${COMP_RTLIB}
-)
-target_link_libraries(dlibc INTERFACE ${RUNTIME_LIB} ${MLIBC_LIBS})
-target_link_options(dlibc INTERFACE -nostdlib)
+# add_library(dlibc OBJECT IMPORTED)
+# add_dependencies(dlibc mlibc)
+# set(MLIBC_OBJ 
+#   "${MLIBC_INSTALL_DIR}/lib/crt1.o"
+#   "${MLIBC_INSTALL_DIR}/lib/crti.o"
+#   "${MLIBC_INSTALL_DIR}/lib/crtn.o")
+# set_target_properties(dlibc PROPERTIES IMPORTED_OBJECTS "${MLIBC_OBJ}")
+# file(MAKE_DIRECTORY "${MLIBC_INSTALL_DIR}/include")
+# target_include_directories(dlibc INTERFACE "${MLIBC_INSTALL_DIR}/include")
+# set(MLIBC_LIBS
+#   "${MLIBC_INSTALL_DIR}/lib/libc.a"
+#   "${MLIBC_INSTALL_DIR}/lib/libcrypt.a"
+#   "${MLIBC_INSTALL_DIR}/lib/libdl.a"
+#   "${MLIBC_INSTALL_DIR}/lib/libm.a"
+#   "${MLIBC_INSTALL_DIR}/lib/libpthread.a"
+#   "${MLIBC_INSTALL_DIR}/lib/libresolv.a"
+#   "${MLIBC_INSTALL_DIR}/lib/librt.a"
+#   "${MLIBC_INSTALL_DIR}/lib/libutil.a"
+#   ${COMP_RTLIB}
+# )
+# target_link_libraries(dlibc INTERFACE ${RUNTIME_LIB} ${MLIBC_LIBS})
+# target_link_options(dlibc INTERFACE -nostdlib)
 
-# cheri compile flags
-if("${DANDELION_PLATFORM}" STREQUAL "cheri")
-set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
-set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
-add_compile_options(${NOCAP_COMPILE_FLAGS})
-endif()
+# # cheri compile flags
+# if("${DANDELION_PLATFORM}" STREQUAL "cheri")
+# set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
+# set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
+# add_compile_options(${NOCAP_COMPILE_FLAGS})
+# endif()
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" functionInterface)
 
@@ -83,5 +87,5 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" fun
 add_subdirectory(basic)
 add_subdirectory(matmac)
 add_subdirectory(matmul)
-add_subdirectory(stdio)
-add_subdirectory(files)
+# add_subdirectory(stdio)
+# add_subdirectory(files)
