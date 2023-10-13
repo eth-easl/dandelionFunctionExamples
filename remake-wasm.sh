@@ -1,6 +1,7 @@
 # set constants
 export WASM_CLANG=/usr/bin/wasm32-clang
-export WASM_OPT=~/projects/wasm/Binaryen/bin/wasm-opt
+export WASM_OPT=~/projects/wasm/binaryen/bin/wasm-opt
+export WASM_OPT_FLAGS="-O3"
 
 # print everything
 set -x
@@ -33,7 +34,7 @@ done
 
 for d in ./*; do
   if [ -f "$d/$d.wasm" ]; then
-    "$WASM_OPT" "$d/$d.wasm" -o "$d/$d.wasm"
+    "$WASM_OPT" "$d/$d.wasm" "$WASM_OPT_FLAGS" -o "$d/$d.wasm"
   fi
 done
 
@@ -41,6 +42,6 @@ done
 
 for d in ./*; do
   if [ -f "$d/$d.wasm" ]; then
-    wasm2wat "$d/$d.wasm" -o "$d/$d.wat"
+    wasm2wat "$d/$d.wasm"  -o "$d/$d.wat"
   fi
 done
