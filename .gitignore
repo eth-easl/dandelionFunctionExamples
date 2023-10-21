@@ -4,3 +4,4 @@ build
 target
 *.check_cache
 Cargo.lock
+bin

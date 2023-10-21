@@ -25,27 +25,27 @@ make
 
 cd ..
 
-# copy wasm binaries to wasm-compiler/wasm-binaries
+# copy wasm binaries to wasm-compiler/bin/wasm
 
-cd wasm-compiler
+cd wasm-compiler/bin
 
-if [ -d "wasm-binaries" ]; then
-  rm -rf ./wasm-binaries
+if [ -d "wasm" ]; then
+  rm -rf ./wasm
 fi
 
-mkdir wasm-binaries
+mkdir wasm
 
-cd ../build/
+cd ../../build/
 
 for d in ./*; do
   if [ -d "$d" ]; then
     if [ "$d" != "./CMakeFiles" ] && [ "$d" != "./functionInterface" ]; then
-      cp "$d/$d" "../wasm-compiler/wasm-binaries/$d.wasm"
+      cp "$d/$d" "../wasm-compiler/bin/wasm/$d.wasm"
     fi
   fi
 done
 
-cd ../wasm-compiler/wasm-binaries
+cd ../wasm-compiler/bin/wasm
 
 # for each wasm binary here, create a .wat file in the same location
 
