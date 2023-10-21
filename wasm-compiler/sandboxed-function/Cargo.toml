@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-sandbox-generated = { path = "../../generated" }
+sandbox-generated = { path = "../rWasm/generated" }
 
 [profile.release]
 panic = "abort"
