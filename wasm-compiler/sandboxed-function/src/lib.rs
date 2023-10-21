@@ -25,4 +25,15 @@ impl __WasmModule {
     pub fn get___system_data(&self) -> Option<i32> {
         self.module.get___dandelion_system_data()
     }
+    #[no_mangle]
+    #[allow(non_snake_case)]
+    pub fn alloc(&mut self, size: i32, alignment: i32) -> i32 {
+        self.module.dandelion_alloc(size, alignment).unwrap()
+    }
+}
+
+#[no_mangle]
+pub fn _start() {
+    let mut module = __WasmModule::new();
+    module.module._start();
 }

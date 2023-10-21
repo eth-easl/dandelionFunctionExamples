@@ -1,6 +1,8 @@
 # A convenience script to re-compile the example functions to wasm.
 # Script should be run from the directory it is in.
 # It will copy the wasm binaries to ./wasm-binaries.
+# Requires /usr/bin/wasm32-clang to be installed. If your wasm32-clang is
+# installed somewhere else, change the WASM_CLANG variable below.
 
 # set constants
 export WASM_CLANG=/usr/bin/wasm32-clang
