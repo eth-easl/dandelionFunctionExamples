@@ -17,6 +17,11 @@ else()
   message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_C_COMPILER_ID}")
 endif()
 
+# WebAssembly flags
+if("${DANDELION_PLATFORM}" STREQUAL "wasm")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined")
+endif()
+
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
 # execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
 # cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
