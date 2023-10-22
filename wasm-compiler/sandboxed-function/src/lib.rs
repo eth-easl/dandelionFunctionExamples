@@ -23,6 +23,7 @@ pub static INTERFACE_MEM_SIZE_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_SIZ
 pub static INTERFACE_MEM_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_FOR_WASM!();
 
 mod function_interface {
+
     use libc::{c_int, size_t, uintptr_t};
 
     #[repr(C)]
@@ -54,50 +55,51 @@ mod function_interface {
         key: size_t,
     }
 
-    extern "C" {
-        pub static mut SYSTEM_DATA_PTR: *mut DandelionSystemData;
-    }
+    #[no_mangle]
+    // a pointer to a pointer to a DandelionSystemData struct.
+    // this makes it easy for Dandelion to just modify the pointer
+    // in memory that this points to, and make it point to the
+    // DandelionSystemData struct in the runtime, without copying.
+    pub static SYSTEM_DATA_PTR_PTR: &usize = &0;
 }
 
 mod wrapper {
     extern crate sandbox_generated;
     use sandbox_generated as Generated;
 
-    pub struct __WasmModule {
-        pub module: Generated::WasmModule,
-    }
+    pub struct WasmModule(pub Generated::WasmModule);
 
-    impl __WasmModule {
+    impl WasmModule {
         #[no_mangle]
         pub fn new() -> Self {
-            Self {
-                module: Generated::WasmModule::new(),
-            }
+            Self (Generated::WasmModule::new())
         }
         #[no_mangle]
         #[allow(non_snake_case)]
         pub fn get___system_data(&self) -> Option<i32> {
-            self.module.get___dandelion_system_data()
+            self.0.get___dandelion_system_data()
         }
         #[no_mangle]
         #[allow(non_snake_case)]
         pub fn alloc(&mut self, size: i32, alignment: i32) -> i32 {
-            self.module.dandelion_alloc(size, alignment).unwrap()
+            self.0.dandelion_alloc(size, alignment).unwrap()
         }
     }
 }
 
 #[no_mangle]
 pub unsafe fn _start() -> i32 {
-    let mut module = wrapper::__WasmModule::new();
-    // check that we received system data from the host
-    match function_interface::SYSTEM_DATA_PTR as i32 {
-        0 => return -2,
-        _ => ()
-    };
-    // let interface_mem_size = module.module.get_INTERFACE_MEM_SIZE_FOR_WASM().unwrap();
-    // let interface_mem_base = module.module.get_INTERFACE_MEM_FOR_WASM().unwrap();
-    match module.module._start() {
+    let mut module = wrapper::WasmModule::new();
+
+    let system_data_ptr = *function_interface::SYSTEM_DATA_PTR_PTR 
+        as *const function_interface::DandelionSystemData;
+    let _system_data = &*system_data_ptr;
+
+    // now we can also set up input and output structs here
+    // which we cannot easily do from Dandelion, because
+    // we don't know yet where module::memory will be located
+    // TODO
+    match module.0._start() {
         Some(_) => 0,
         None => -1,
     }
