@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 sandbox-generated = { path = "../rWasm/generated" }
+# macro-utils = { path = "./macro-utils" }
 
 [profile.release]
 panic = "abort"
