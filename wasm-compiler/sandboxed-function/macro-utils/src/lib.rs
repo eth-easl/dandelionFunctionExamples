@@ -1,6 +1,4 @@
 extern crate sandbox_generated;
-use std::str::FromStr;
-
 use sandbox_generated as Generated;
 
 //
@@ -10,8 +8,9 @@ use sandbox_generated as Generated;
 
 #[proc_macro]
 pub fn get_system_data_wasm_offset(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    println!("get_system_data_wasm_offset");
     let module = Generated::WasmModule::new();
     let system_data = module.get___dandelion_system_data().unwrap();
-    let system_data = format!("0x{:x}", system_data);
-    proc_macro::TokenStream::from_str(&system_data).unwrap()
+    let system_data_str = format!("0x{:x}", system_data);
+    system_data_str.parse().unwrap()
 }

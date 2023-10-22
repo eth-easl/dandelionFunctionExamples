@@ -14,7 +14,7 @@ set -x
 # transpile with rWasm
 cd ./rWasm
 rm -rf ./generated
-cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size 100 ../${SRC}
+cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size 2 ../${SRC}
 
 # compile function
 cd ../sandboxed-function

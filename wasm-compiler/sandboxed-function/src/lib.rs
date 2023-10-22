@@ -8,26 +8,19 @@
 /// requirement in the rWasm generated code.
 
 // need to define a panic handler, since this is a cdylib
-
 use core::panic::PanicInfo;
-
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-// convenience macros to extract some data for Dandelion from the generated code
-
-// #[macro_use]
-// extern crate macro_utils;
-
-// TODO: when linking this crate with other libraries, LLVM might still
-//       mangle symbols. In case this might happen, see how to prevent it here:
-//       https://github.com/rust-lang/rust/issues/35052#issuecomment-235420755
+#[macro_use]
+extern crate macro_utils;
 #[no_mangle]
-pub static SYSTEM_DATA_PTR: i32 = 0;// macro_utils::get_system_data!();
-
-// the actual wrapper
+pub static SYSTEM_DATA_PTR: i32 = macro_utils::get_system_data_wasm_offset!();
+// TODO: if we ever link this against other binaries, LLVM might still mangle 
+//       symbols. In case consider:
+//       https://github.com/rust-lang/rust/issues/35052#issuecomment-235420755
 
 extern crate sandbox_generated;
 use sandbox_generated as Generated;
@@ -57,7 +50,10 @@ impl __WasmModule {
 }
 
 #[no_mangle]
-pub fn _start() {
+pub unsafe fn _start() -> i32 {
     let mut module = __WasmModule::new();
-    module.module._start();
+    match module.module._start() {
+        Some(_) => 0,
+        None => -1,
+    }
 }

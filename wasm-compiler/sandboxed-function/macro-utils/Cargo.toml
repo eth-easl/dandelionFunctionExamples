@@ -7,5 +7,6 @@ edition = "2021"
 crate-type = ["proc-macro"]
 
 [dependencies]
-# proc-macro2 = "1.0.69"
+proc-macro2 = "1.0.69"
+syn = "2.0.38"
 sandbox-generated = { path = "../../rWasm/generated" }
