@@ -14,43 +14,48 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-#[macro_use]
 extern crate macro_utils;
 #[no_mangle]
-pub static SYSTEM_DATA_WASM_MEM_OFFSET: i32 = macro_utils::get_system_data_wasm_offset!();
-// TODO: if we ever link this against other binaries, LLVM might still mangle 
-//       symbols. In case consider:
-//       https://github.com/rust-lang/rust/issues/35052#issuecomment-235420755
+pub static SYSTEM_DATA_WASM_MEM_OFFSET: i32 = macro_utils::get___dandelion_system_data!();
+#[no_mangle]
+pub static INTERFACE_MEM_SIZE_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_SIZE_FOR_WASM!();
+#[no_mangle]
+pub static INTERFACE_MEM_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_FOR_WASM!();
 
-mod DandelionInterface {
-    pub struct io_set_info {
-        ident: *const u8,   // const char*
-        ident_len: usize,
-        offset: usize,
+mod function_interface {
+    use libc::{c_int, size_t, uintptr_t};
+
+    #[repr(C)]
+    pub struct DandelionSystemData {
+        exit_code: c_int,
+        heap_begin: uintptr_t,
+        heap_end: uintptr_t,
+        input_sets_len: size_t,
+        input_sets: *const IoSetInfo,
+        output_sets_len: size_t,
+        output_sets: *const IoSetInfo,
+        input_bufs: *const IoBufferDescriptor,
+        output_bufs: *const IoBufferDescriptor,
     }
 
-    pub struct io_buffer {
-        ident: *const u8,   // const char*
-        ident_len: usize,
-        data: *mut u8,      // void*
-        data_len: usize,
-        key: usize,
+    #[repr(C)]
+    pub struct IoSetInfo {
+        ident: uintptr_t,
+        ident_len: size_t,
+        offset: size_t,
     }
 
-    pub struct SystemData {
-        exit_code: i32,
-        heap_begin: usize,
-        heap_end: usize,
-        input_sets_len: usize,
-        input_sets: *mut io_set_info,
-        output_sets_len: usize,
-        output_sets: *mut io_set_info,
-        input_bufs: *mut io_buffer,
-        output_bufs: *mut io_buffer,
+    #[repr(C)]
+    pub struct IoBufferDescriptor {
+        ident: uintptr_t,
+        ident_len: size_t,
+        data: uintptr_t,
+        data_len: size_t,
+        key: size_t,
     }
 
     extern "C" {
-        pub static mut SYSTEM_DATA_PTR: *mut SystemData;
+        pub static mut SYSTEM_DATA_PTR: *mut DandelionSystemData;
     }
 }
 
@@ -86,12 +91,12 @@ mod wrapper {
 pub unsafe fn _start() -> i32 {
     let mut module = wrapper::__WasmModule::new();
     // check that we received system data from the host
-    match DandelionInterface::SYSTEM_DATA_PTR as i32 {
+    match function_interface::SYSTEM_DATA_PTR as i32 {
         0 => return -2,
         _ => ()
     };
-    // write system data to the wasm module's memory
-    // TODO
+    // let interface_mem_size = module.module.get_INTERFACE_MEM_SIZE_FOR_WASM().unwrap();
+    // let interface_mem_base = module.module.get_INTERFACE_MEM_FOR_WASM().unwrap();
     match module.module._start() {
         Some(_) => 0,
         None => -1,

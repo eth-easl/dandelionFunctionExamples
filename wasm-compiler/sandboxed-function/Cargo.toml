@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 sandbox-generated = { path = "../rWasm/generated" }
 macro-utils = { path = "./macro-utils" }
+libc = "0.2.149"
 
 [profile.release]
 panic = "abort"

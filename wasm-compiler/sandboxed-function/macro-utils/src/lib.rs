@@ -6,11 +6,19 @@ use sandbox_generated as Generated;
 // code at compile time.
 //
 
-#[proc_macro]
-pub fn get_system_data_wasm_offset(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    println!("get_system_data_wasm_offset");
-    let module = Generated::WasmModule::new();
-    let system_data = module.get___dandelion_system_data().unwrap();
-    let system_data_str = format!("0x{:x}", system_data);
-    system_data_str.parse().unwrap()
+macro_rules! generate_getter {
+    ($name:ident) => {
+        #[proc_macro]
+        #[allow(non_snake_case)]
+        pub fn $name(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
+            let module = Generated::WasmModule::new();
+            let $name = module.$name().unwrap();
+            let $name = format!("0x{:x}", $name);
+            $name.parse().unwrap()
+        }
+    }
 }
+
+generate_getter!(get___dandelion_system_data);
+generate_getter!(get_INTERFACE_MEM_SIZE_FOR_WASM);
+generate_getter!(get_INTERFACE_MEM_FOR_WASM);

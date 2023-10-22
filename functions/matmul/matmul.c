@@ -7,6 +7,9 @@
 // Project Internal Libraries
 #include "dandelion/runtime.h"
 
+const size_t  INTERFACE_MEM_SIZE_FOR_WASM = 4096;
+const char    INTERFACE_MEM_FOR_WASM[INTERFACE_MEM_SIZE_FOR_WASM] = {0};
+
 int mat_mul() {
   // check we get expected inputs
   size_t input_set_count = dandelion_input_set_count();
