@@ -9,18 +9,20 @@
 
 // need to define a panic handler, since this is a cdylib
 use core::panic::PanicInfo;
+
+use function_interface::DandelionSystemData;
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-extern crate macro_utils;
-#[no_mangle]
-pub static SYSTEM_DATA_WASM_MEM_OFFSET: i32 = macro_utils::get___dandelion_system_data!();
-#[no_mangle]
-pub static INTERFACE_MEM_SIZE_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_SIZE_FOR_WASM!();
-#[no_mangle]
-pub static INTERFACE_MEM_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_FOR_WASM!();
+// extern crate macro_utils;
+// #[no_mangle]
+// pub static SYSTEM_DATA_WASM_MEM_OFFSET: i32 = macro_utils::get___dandelion_system_data!();
+// #[no_mangle]
+// pub static INTERFACE_MEM_SIZE_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_SIZE_FOR_WASM!();
+// #[no_mangle]
+// pub static INTERFACE_MEM_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_FOR_WASM!();
 
 mod function_interface {
 
@@ -39,11 +41,62 @@ mod function_interface {
         output_bufs: *const IoBufferDescriptor,
     }
 
+    impl DandelionSystemData {
+        /// Copies the DandelionSystemData struct into the given memory.
+        /// Sub-structs (e.g. IoSetInfo) are copied into the memory as well,
+        /// and the pointers in the DandelionSystemData struct are adjusted.
+        /// Returns the number of bytes copied.
+        pub fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize {
+            let mut offset = 0;
+            todo!()
+        }
+    }
+
     #[repr(C)]
     pub struct IoSetInfo {
         ident: uintptr_t,
         ident_len: size_t,
         offset: size_t,
+    }
+
+    impl IoSetInfo {
+        pub fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize {
+            // written memory counter
+            let mut offset = 0;
+
+            // pointers to fix
+            let ident_ptr_offset = 0;
+
+            // values to change the pointers to
+            let mut glob_ident_offset = -1;
+
+            // copy struct
+            let self_raw = unsafe { core::slice::from_raw_parts(
+                self as *const IoSetInfo as *const u8,
+                core::mem::size_of::<IoSetInfo>(),
+            )};
+            mem[offset..offset + self_raw.len()].copy_from_slice(self_raw);
+            offset += self_raw.len();
+            
+            // copy ident
+            glob_ident_offset = base_offset + offset;
+            let ident_raw = unsafe { core::slice::from_raw_parts(
+                self.ident as *const u8,
+                self.ident_len,
+            )};
+            mem[offset..offset + ident_raw.len()].copy_from_slice(ident_raw);
+            offset += ident_raw.len();
+
+            // fix the pointer to the ident
+            let ident_offset_raw = unsafe { core::slice::from_raw_parts(
+                &glob_ident_offset as *const usize as *const u8,
+                core::mem::size_of::<usize>(),
+            )};
+            mem[ident_ptr_offset..ident_ptr_offset + ident_offset_raw.len()]
+                .copy_from_slice(ident_offset_raw);
+            
+            offset
+        }
     }
 
     #[repr(C)]
@@ -55,12 +108,79 @@ mod function_interface {
         key: size_t,
     }
 
-    #[no_mangle]
-    // a pointer to a pointer to a DandelionSystemData struct.
-    // this makes it easy for Dandelion to just modify the pointer
-    // in memory that this points to, and make it point to the
-    // DandelionSystemData struct in the runtime, without copying.
-    pub static SYSTEM_DATA_PTR_PTR: &usize = &0;
+    impl IoBufferDescriptor {
+        pub fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize {
+            // written memory counter
+            let mut offset = 0;
+
+            // pointers to fix
+            let ident_ptr_offset = 0;
+            let data_ptr_offset = 
+                core::mem::size_of::<usize>() +
+                core::mem::size_of::<size_t>();
+            
+            // values to change the pointers to
+            let mut glob_ident_offset = -1;
+            let mut glob_data_offset = -1;
+
+            // copy struct
+            let self_raw = unsafe { core::slice::from_raw_parts(
+                self as *const IoBufferDescriptor as *const u8,
+                core::mem::size_of::<IoBufferDescriptor>(),
+            )};
+            mem[offset..offset + self_raw.len()].copy_from_slice(self_raw);
+            offset += self_raw.len();
+            
+            // copy ident
+            glob_ident_offset = base_offset + offset;
+            let ident_raw = unsafe { core::slice::from_raw_parts(
+                self.ident as *const u8,
+                self.ident_len,
+            )};
+            mem[offset..offset + ident_raw.len()].copy_from_slice(ident_raw);
+            offset += ident_raw.len();
+
+            // copy data
+            let glob_data_offset = base_offset + offset;
+            let data_raw = unsafe { core::slice::from_raw_parts(
+                self.data as *const u8,
+                self.data_len,
+            )};
+            mem[offset..offset + data_raw.len()].copy_from_slice(data_raw);
+            offset += data_raw.len();
+
+            // fix the pointer to the ident
+            let ident_offset_raw = unsafe { core::slice::from_raw_parts(
+                &glob_ident_offset as *const usize as *const u8,
+                core::mem::size_of::<usize>(),
+            )};
+            mem[ident_ptr_offset..ident_ptr_offset + ident_offset_raw.len()]
+                .copy_from_slice(ident_offset_raw);
+
+            // fix the pointer to the data
+            let data_offset_raw = unsafe { core::slice::from_raw_parts(
+                &glob_data_offset as *const usize as *const u8,
+                core::mem::size_of::<usize>(),
+            )};
+            mem[data_ptr_offset..data_ptr_offset + data_offset_raw.len()]
+                .copy_from_slice(data_offset_raw);
+
+            offset
+        }
+    }
+
+    impl IoBufferDescriptor {
+        pub fn copy_to_mem(&self, mem: &mut [u8]) -> usize {
+            let mut offset = 0;
+        }
+    }
+
+    // #[no_mangle]
+    // // a pointer to a pointer to a DandelionSystemData struct.
+    // // this makes it easy for Dandelion to just modify the pointer
+    // // in memory that this points to, and make it point to the
+    // // DandelionSystemData struct in the runtime, without copying.
+    // pub static SYSTEM_DATA_PTR_PTR: &usize = &0;
 }
 
 mod wrapper {
@@ -74,33 +194,59 @@ mod wrapper {
         pub fn new() -> Self {
             Self (Generated::WasmModule::new())
         }
-        #[no_mangle]
-        #[allow(non_snake_case)]
-        pub fn get___system_data(&self) -> Option<i32> {
-            self.0.get___dandelion_system_data()
-        }
-        #[no_mangle]
-        #[allow(non_snake_case)]
-        pub fn alloc(&mut self, size: i32, alignment: i32) -> i32 {
-            self.0.dandelion_alloc(size, alignment).unwrap()
-        }
+        // #[no_mangle]
+        // #[allow(non_snake_case)]
+        // pub fn get___system_data(&self) -> Option<i32> {
+        //     self.0.get___dandelion_system_data()
+        // }
+        // #[no_mangle]
+        // #[allow(non_snake_case)]
+        // pub fn alloc(&mut self, size: i32, alignment: i32) -> i32 {
+        //     self.0.dandelion_alloc(size, alignment).unwrap()
+        // }
     }
 }
 
+// #[no_mangle]
+// pub unsafe fn _start() -> i32 {
+//     let mut module = wrapper::WasmModule::new();
+
+//     let system_data_ptr = *function_interface::SYSTEM_DATA_PTR_PTR 
+//         as *const function_interface::DandelionSystemData;
+//     let system_data = &*system_data_ptr;
+
+//     // copy the system data into the wasm module's memory at the offset;
+//     // module.0.memory already has free space at index SYSTEM_DATA_WASM_MEM_OFFSET
+//     // of length INTERFACE_MEM_SIZE_FOR_WASM
+
+//     let system_data_offset = SYSTEM_DATA_WASM_MEM_OFFSET as usize;
+//     let system_data_slice = core::slice::from_raw_parts(
+//         system_data_ptr as *const u8,
+//         core::mem::size_of::<function_interface::DandelionSystemData>(),
+//     );
+//     module.0.memory[system_data_offset..system_data_offset + system_data_slice.len()]
+//         .copy_from_slice(system_data_slice);
+
+//     match module.0._start() {
+//         Some(_) => 0,
+//         None => -1,
+//     }
+// }
+
+
 #[no_mangle]
-pub unsafe fn _start() -> i32 {
+pub fn _run(p: &DandelionSystemData) {
     let mut module = wrapper::WasmModule::new();
 
-    let system_data_ptr = *function_interface::SYSTEM_DATA_PTR_PTR 
-        as *const function_interface::DandelionSystemData;
-    let _system_data = &*system_data_ptr;
+    // copy the system data into the wasm module's memory
 
-    // now we can also set up input and output structs here
-    // which we cannot easily do from Dandelion, because
-    // we don't know yet where module::memory will be located
-    // TODO
-    match module.0._start() {
-        Some(_) => 0,
-        None => -1,
-    }
+    let wasm_mem_offset = module.0.get_INTERFACE_MEM_FOR_WASM().unwrap() as usize;
+    let system_data_slice = unsafe {
+        core::slice::from_raw_parts(
+            p as *const DandelionSystemData as *const u8,
+            core::mem::size_of::<DandelionSystemData>(),
+        )
+    };
+    module.0.memory[wasm_mem_offset..wasm_mem_offset + system_data_slice.len()]
+        .copy_from_slice(system_data_slice);
 }
