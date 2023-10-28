@@ -9,288 +9,35 @@
 
 // need to define a panic handler, since this is a cdylib
 use core::panic::PanicInfo;
-
-use function_interface::CopyToMem;
-
 #[cfg_attr(not(test), panic_handler)]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-// extern crate macro_utils;
-// #[no_mangle]
-// pub static SYSTEM_DATA_WASM_MEM_OFFSET: i32 = macro_utils::get___dandelion_system_data!();
-// #[no_mangle]
-// pub static INTERFACE_MEM_SIZE_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_SIZE_FOR_WASM!();
-// #[no_mangle]
-// pub static INTERFACE_MEM_FOR_WASM: i32 = macro_utils::get_INTERFACE_MEM_FOR_WASM!();
-
-pub mod function_interface {
-
-    use libc::{c_int, size_t, uintptr_t};
-
-    #[repr(C)]
-    pub struct DandelionSystemData {
-        pub exit_code: c_int,
-        pub heap_begin: uintptr_t,
-        pub heap_end: uintptr_t,
-        pub input_sets_len: size_t,
-        pub input_sets: *const IoSetInfo,
-        pub output_sets_len: size_t,
-        pub output_sets: *const IoSetInfo,
-        pub input_bufs: *const IoBufferDescriptor,
-        pub output_bufs: *const IoBufferDescriptor,
+#[no_mangle]
+pub static mut INSTANCE: wrapper::WasmModule = wrapper::WasmModule::new();
+#[no_mangle]
+pub static SYSDATA_MEM_START_IDX: usize = unsafe { 
+    match INSTANCE.0.get_INTERFACE_MEM_FOR_WASM() {
+        Some(x) => x as usize,
+        None => panic!("cannot read SYSDATA_MEM_START"),
+    
     }
-
-    pub trait CopyToMem {
-        fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize;
+};
+#[no_mangle]
+pub static SYSDATA_MEM_SIZE: usize = unsafe { 
+    match INSTANCE.0.get_INTERFACE_MEM_SIZE_FOR_WASM() {
+        Some(x) => x as usize,
+        None => panic!("cannot read SYSDATA_MEM_SIZE"),
     }
-
-    fn copy_all<T>(base: *const T, base_offset: usize, n: usize, mem: &mut [u8]) -> usize 
-        where T: CopyToMem
-    {
-        let align = core::mem::align_of::<T>();
-        let mut offset = 0;
-        macro_rules! inc {
-            ($x:expr) => {
-                // advance offset to next multiple of align, but at least $x
-                offset += $x + if $x%align!=0 { align - $x%align } else { 0 };
-            };
-            () => {
-                offset += align;
-            };
-        }
-        for i in 0..n {
-            let elem = unsafe { &(*base.offset(i as isize)) };
-            inc!(elem.copy_to_mem(&mut mem[offset..], base_offset + offset));
-        }
-        offset
+};
+#[no_mangle]
+pub static SYSTEM_DATA_IDX: usize = unsafe { 
+    match INSTANCE.0.get___dandelion_system_data() {
+        Some(x) => x as usize,
+        None => panic!("cannot read SYSTEM_DATA_IDX"),
     }
-
-    /// Turn the referenced data into a slice of bytes.
-    fn to_bytes<T>(elem: &T) -> &[u8] {
-        unsafe { core::slice::from_raw_parts(
-            elem as *const T as *const u8,
-            core::mem::size_of::<T>(),
-        )}
-    }
-
-    impl CopyToMem for DandelionSystemData {
-
-        /// Copies the DandelionSystemData struct into the given memory.
-        /// Sub-structs (e.g. IoSetInfo) are copied into the memory as well,
-        /// and the pointers in the DandelionSystemData struct are adjusted.
-        /// Returns the number of bytes copied.
-        fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize {
-            let align = core::mem::align_of::<DandelionSystemData>();
-            let mut offset = 0;
-            macro_rules! inc {
-                ($x:expr) => {
-                    // advance offset to next multiple of align, but at least $x
-                    offset += $x + if $x%align!=0 { align - $x%align } else { 0 };
-                };
-                () => {
-                    offset += align;
-                };
-            }
-            
-            // pointers to fix
-            let input_sets_ptr_offset =     align * 4;
-            let output_sets_ptr_offset =    align * 6;
-            let input_bufs_ptr_offset =     align * 7;
-            let output_bufs_ptr_offset =    align * 8;
-            
-            // values to change the pointers to
-            let mut glob_input_sets_offset = 0;
-            let mut glob_output_sets_offset = 0;
-            let mut glob_input_bufs_offset = 0;
-            let mut glob_output_bufs_offset = 0;
-
-            // copy struct
-            let self_raw = unsafe { core::slice::from_raw_parts(
-                self as *const DandelionSystemData as *const u8,
-                core::mem::size_of::<DandelionSystemData>(),
-            )};
-            mem[offset..offset + self_raw.len()].copy_from_slice(self_raw);
-            inc!(self_raw.len());
-
-            // copy input sets
-            glob_input_sets_offset = base_offset + offset;
-            inc!(copy_all(self.input_sets, offset, self.input_sets_len, &mut mem[offset..]));
-
-            // copy output sets
-            glob_output_sets_offset = base_offset + offset;
-            inc!(copy_all(self.output_sets, offset, self.output_sets_len, &mut mem[offset..]));
-
-            // copy input bufs
-            glob_input_bufs_offset = base_offset + offset;
-            inc!(copy_all(self.input_bufs, offset, self.input_sets_len, &mut mem[offset..]));
-
-            // copy output bufs
-            glob_output_bufs_offset = base_offset + offset;
-            inc!(copy_all(self.output_bufs, offset, self.output_sets_len, &mut mem[offset..]));
-
-            // fix the pointer to the input sets
-            let input_sets_offset = glob_input_sets_offset as size_t;
-            let input_sets_offset_raw = to_bytes(&input_sets_offset);
-            mem[input_sets_ptr_offset..input_sets_ptr_offset + input_sets_offset_raw.len()]
-                .copy_from_slice(input_sets_offset_raw);
-
-            // fix the pointer to the output sets
-            let output_sets_offset = glob_output_sets_offset as size_t;
-            let output_sets_offset_raw = to_bytes(&output_sets_offset);
-            mem[output_sets_ptr_offset..output_sets_ptr_offset + output_sets_offset_raw.len()]
-                .copy_from_slice(output_sets_offset_raw);
-
-            // fix the pointer to the input bufs
-            let input_bufs_offset = glob_input_bufs_offset as size_t;
-            let input_bufs_offset_raw = to_bytes(&input_bufs_offset);
-            mem[input_bufs_ptr_offset..input_bufs_ptr_offset + input_bufs_offset_raw.len()]
-                .copy_from_slice(input_bufs_offset_raw);
-
-            // fix the pointer to the output bufs
-            let output_bufs_offset = glob_output_bufs_offset as size_t;
-            let output_bufs_offset_raw = to_bytes(&output_bufs_offset);
-            mem[output_bufs_ptr_offset..output_bufs_ptr_offset + output_bufs_offset_raw.len()]
-                .copy_from_slice(output_bufs_offset_raw);
-
-            offset
-        }
-    }
-
-    #[repr(C)]
-    pub struct IoSetInfo {
-        pub ident: uintptr_t,
-        pub ident_len: size_t,
-        pub offset: size_t,
-    }
-
-    impl CopyToMem for IoSetInfo {
-        fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize {
-            let align = core::mem::align_of::<IoSetInfo>();
-            let mut offset = 0;
-            macro_rules! inc {
-                ($x:expr) => {
-                    // advance offset to next multiple of align, but at least $x
-                    offset += $x + if $x%align!=0 { align - $x%align } else { 0 };
-                };
-                () => {
-                    offset += align;
-                };
-            }
-
-            // pointers to fix
-            let ident_ptr_offset = 0;
-
-            // values to change the pointers to
-            let mut glob_ident_offset = 0;
-
-            // copy struct
-            let self_raw = unsafe { core::slice::from_raw_parts(
-                self as *const IoSetInfo as *const u8,
-                core::mem::size_of::<IoSetInfo>(),
-            )};
-            mem[offset..offset + self_raw.len()].copy_from_slice(self_raw);
-            inc!(self_raw.len());
-            
-            // copy ident
-            glob_ident_offset = base_offset + offset;
-            let ident_raw = unsafe { core::slice::from_raw_parts(
-                self.ident as *const u8,
-                self.ident_len,
-            )};
-            mem[offset..offset + ident_raw.len()].copy_from_slice(ident_raw);
-            inc!(ident_raw.len());
-
-            // fix the pointer to the ident
-            let ident_offset_raw = unsafe { core::slice::from_raw_parts(
-                &glob_ident_offset as *const usize as *const u8,
-                core::mem::size_of::<usize>(),
-            )};
-            mem[ident_ptr_offset..ident_ptr_offset + ident_offset_raw.len()]
-                .copy_from_slice(ident_offset_raw);
-            
-            offset
-        }
-    }
-
-    #[repr(C)]
-    pub struct IoBufferDescriptor {
-        pub ident: uintptr_t,
-        pub ident_len: size_t,
-        pub data: uintptr_t,
-        pub data_len: size_t,
-        pub key: size_t,
-    }
-
-    impl CopyToMem for IoBufferDescriptor {
-        fn copy_to_mem(&self, mem: &mut [u8], base_offset: usize) -> usize {
-            let align = core::mem::align_of::<IoBufferDescriptor>();
-            let mut offset = 0;
-            macro_rules! inc {
-                ($x:expr) => {
-                    // advance offset to next multiple of align, but at least $x
-                    offset += $x + if $x%align!=0 { align - $x%align } else { 0 };
-                };
-                () => {
-                    offset += align;
-                };
-            }
-
-            // pointers to fix
-            let ident_ptr_offset =  0;
-            let data_ptr_offset =   align * 2;
-            
-            // values to change the pointers to
-            let mut glob_ident_offset = 0;
-            let mut glob_data_offset = 0;
-
-            // copy struct
-            let self_raw = unsafe { core::slice::from_raw_parts(
-                self as *const IoBufferDescriptor as *const u8,
-                core::mem::size_of::<IoBufferDescriptor>(),
-            )};
-            mem[offset..offset + self_raw.len()].copy_from_slice(self_raw);
-            inc!(self_raw.len());
-            
-            // copy ident
-            glob_ident_offset = base_offset + offset;
-            let ident_raw = unsafe { core::slice::from_raw_parts(
-                self.ident as *const u8,
-                self.ident_len,
-            )};
-            mem[offset..offset + ident_raw.len()].copy_from_slice(ident_raw);
-            inc!(ident_raw.len());
-
-            // copy data
-            let glob_data_offset = base_offset + offset;
-            let data_raw = unsafe { core::slice::from_raw_parts(
-                self.data as *const u8,
-                self.data_len,
-            )};
-            mem[offset..offset + data_raw.len()].copy_from_slice(data_raw);
-            inc!(data_raw.len());
-
-            // fix the pointer to the ident
-            let ident_offset_raw = unsafe { core::slice::from_raw_parts(
-                &glob_ident_offset as *const usize as *const u8,
-                core::mem::size_of::<usize>(),
-            )};
-            mem[ident_ptr_offset..ident_ptr_offset + ident_offset_raw.len()]
-                .copy_from_slice(ident_offset_raw);
-
-            // fix the pointer to the data
-            let data_offset_raw = unsafe { core::slice::from_raw_parts(
-                &glob_data_offset as *const usize as *const u8,
-                core::mem::size_of::<usize>(),
-            )};
-            mem[data_ptr_offset..data_ptr_offset + data_offset_raw.len()]
-                .copy_from_slice(data_offset_raw);
-
-            offset
-        }
-    }
-}
+};
 
 mod wrapper {
     extern crate sandbox_generated;
@@ -299,155 +46,20 @@ mod wrapper {
 
     impl WasmModule {
         #[no_mangle]
-        pub fn new() -> Self {
+        pub const fn new() -> Self {
             Self (sandbox_generated::WasmModule::new())
+        }
+        #[no_mangle]
+        pub fn run(&mut self) -> Option<()> {
+            self.0._start()
         }
     }
 }
 
+#[no_mangle]
+pub fn _start() {
+    unsafe { INSTANCE.run(); }
+}
 
 #[no_mangle]
-pub fn _run(p: &crate::function_interface::DandelionSystemData) {
-    let mut module = wrapper::WasmModule::new();
-
-    // copy the system data into the wasm module's memory
-
-    let wasm_mem_offset = module.0.get_INTERFACE_MEM_FOR_WASM().unwrap() as usize;
-    let system_data_slice = unsafe {
-        core::slice::from_raw_parts(
-            p as *const crate::function_interface::DandelionSystemData as *const u8,
-            core::mem::size_of::<crate::function_interface::DandelionSystemData>(),
-        )
-    };
-    p.copy_to_mem(&mut module.0.memory, wasm_mem_offset);
-}
-
-
-#[cfg(test)]
-mod system_data_copying {
-
-    use libc::{size_t, uintptr_t, system};
-    
-    use crate::function_interface::{DandelionSystemData, IoSetInfo, IoBufferDescriptor, CopyToMem};
-
-    #[test]
-    pub fn copy_system_data_basic() {
-        let system_data = DandelionSystemData {
-            exit_code: 1,
-            heap_begin: 2,
-            heap_end: 3,
-
-            input_sets_len: 2,
-            input_sets: &[
-                IoSetInfo {
-                    ident:      "input set 1".as_ptr() as uintptr_t,
-                    ident_len:  "input set 1".len(),
-                    offset:     0,
-                },
-                IoSetInfo {
-                    ident:      "input set 2".as_ptr() as uintptr_t,
-                    ident_len:  "input set 2".len(),
-                    offset:     1,
-                },
-            ] as *const IoSetInfo,
-
-            output_sets_len: 2,
-            output_sets: &[
-                IoSetInfo {
-                    ident:      "output set 1".as_ptr() as uintptr_t,
-                    ident_len:  "output set 1".len(),
-                    offset:     0,
-                },
-                IoSetInfo {
-                    ident:      "output set 2".as_ptr() as uintptr_t,
-                    ident_len:  "output set 2".len(),
-                    offset:     1,
-                },
-            
-            ] as *const IoSetInfo,
-
-            input_bufs: &[
-                IoBufferDescriptor {
-                    ident:      "input buf 1".as_ptr() as uintptr_t,
-                    ident_len:  "input buf 1".len(),
-                    data:       [1, 2, 3, 4].as_ptr() as uintptr_t,
-                    data_len:   4 as size_t,
-                    key:        10 as size_t,
-                },
-                IoBufferDescriptor {
-                    ident:      "input buf 2".as_ptr() as uintptr_t,
-                    ident_len:  "input buf 2".len(),
-                    data:       [1, 2, 3, 4].as_ptr() as uintptr_t,
-                    data_len:   4 as size_t,
-                    key:        20 as size_t,
-                },
-            ] as *const IoBufferDescriptor,
-
-            output_bufs: &[
-                IoBufferDescriptor {
-                    ident:      "output buf 1".as_ptr() as uintptr_t,
-                    ident_len:  "output buf 1".len(),
-                    data:       [1, 2, 3, 4].as_ptr() as uintptr_t,
-                    data_len:   4 as size_t,
-                    key:        10 as size_t,
-                },
-                IoBufferDescriptor {
-                    ident:      "output buf 2".as_ptr() as uintptr_t,
-                    ident_len:  "output buf 2".len(),
-                    data:       [1, 2, 3, 4].as_ptr() as uintptr_t,
-                    data_len:   4 as size_t,
-                    key:        20 as size_t,
-                },
-            ] as *const IoBufferDescriptor,
-        };
-
-        let mut mem = [0u8; 1024];
-        let mem_addr = mem.as_mut_ptr() as uintptr_t;
-        system_data.copy_to_mem(&mut mem, 0);
-        println!("{:?}", mem);
-
-        // interpret the first "core::mem::size_of::<DandelionSystemData>()" bytes
-        // as a DandelionSystemData struct and check the values
-
-        let mem_system_data = unsafe { 
-            &*(core::mem::transmute::<*const u8, *const DandelionSystemData> (
-                mem[0..core::mem::size_of::<DandelionSystemData>()].as_ptr()
-            ))
-        };
-        assert_eq!(mem_system_data.exit_code,       system_data.exit_code);
-        assert_eq!(mem_system_data.heap_begin,      system_data.heap_begin);
-        assert_eq!(mem_system_data.heap_end,        system_data.heap_end);
-        assert_eq!(mem_system_data.input_sets_len,  system_data.input_sets_len);
-        assert_eq!(mem_system_data.output_sets_len, system_data.output_sets_len);
-
-        let inp_buf_offset = 0;
-        for is in 0..system_data.input_sets_len { unsafe {
-            // now check the input sets
-            // when reading the mem_<...> pointers, we need to offset them by the
-            // base address of the memory (mem_addr) to get the actual address
-            let mem_input_set = (
-                mem_addr + 
-                mem_system_data.input_sets as uintptr_t +
-                core::mem::size_of::<IoSetInfo>() * is as uintptr_t
-            ) as *const IoSetInfo;
-            println!("mem_input_set: {}", mem_input_set as uintptr_t);
-            let input_set = system_data.input_sets.offset(is as isize);
-            let mem_input_set_ident = (
-                mem_addr + 
-                (*mem_input_set).ident as uintptr_t
-            ) as *const u8;
-            let mem_input_set_ident_slice = core::slice::from_raw_parts(
-                mem_input_set_ident,
-                (*mem_input_set).ident_len,
-            );
-            let input_set_ident = (*input_set).ident as *const u8;
-            let input_set_ident_slice = core::slice::from_raw_parts(
-                input_set_ident,
-                (*input_set).ident_len,
-            );
-            assert_eq!(mem_input_set_ident_slice, input_set_ident_slice);
-            assert_eq!((*mem_input_set).ident_len, (*input_set).ident_len);
-            assert_eq!((*mem_input_set).offset,    (*input_set).offset);
-        } }
-    }
-}
+pub fn _sanity_check() -> i32 { 42 }

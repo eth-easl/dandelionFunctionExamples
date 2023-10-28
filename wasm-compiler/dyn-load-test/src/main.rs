@@ -43,9 +43,19 @@ fn read_so_and_call(obj_file_path: &str, entry_point: &str, expected_result: i32
     assert_eq!(result, expected_result);
 }
 
+unsafe fn libload(obj_file_path: &str) {
+    use libloading::{Library, Symbol};
+    let lib = Library::new(obj_file_path).unwrap();
+    let run: Symbol<extern "C" fn() -> i32> = lib.get(b"run").unwrap();
+    let result = run();
+    println!("result: {}", result);
+    assert_eq!(result, 42);
+}
+
 // // include ./guest/target/release/libguest.so
 // static CODE: &'static [u8] = include_bytes!("../guest/target/release/libguest.so");
 
 fn main() {
-    read_so_and_call("guest/target/release/libguest.so", "run", 42);
+    // read_so_and_call("guest/target/release/libguest.so", "run", 42);
+    unsafe { libload("guest/target/release/libguest.so"); }
 }
