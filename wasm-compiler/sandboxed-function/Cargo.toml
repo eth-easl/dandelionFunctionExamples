@@ -4,14 +4,18 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib"]
 name = "sandboxed_function"
 path = "src/lib.rs"
+
+# [toolchain]
+# channel = "nightly"
 
 [dependencies]
 sandbox-generated = { path = "../rWasm/generated" }
 macro-utils = { path = "./macro-utils" }
-libc = "0.2.149"
+libc = { version = "0.2.149", default-features = false }    # default features depend on std
+compiler_builtins = { git = "https://github.com/rust-lang/compiler-builtins", features = ["mem"] }
 
 [profile.dev]
 panic = "abort"

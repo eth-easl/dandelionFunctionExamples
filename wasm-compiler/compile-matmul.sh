@@ -18,9 +18,10 @@ cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size 2 ../${S
 
 # compile function
 cd ../sandboxed-function
-cargo build
+cargo clean
+RUSTFLAGS="-C relocation-model=pic" cargo +nightly build --release
 
 # copy binary to bin/
-cp ./target/debug/libsandboxed_function.so ../${DST}
+cp ./target/release/libsandboxed_function.so ../${DST}
 
 cd "$(dirname "$0")"
