@@ -8,9 +8,6 @@ crate-type = ["cdylib"]
 name = "sandboxed_function"
 path = "src/lib.rs"
 
-# [toolchain]
-# channel = "nightly"
-
 [dependencies]
 sandbox-generated = { path = "../rWasm/generated" }
 macro-utils = { path = "./macro-utils" }

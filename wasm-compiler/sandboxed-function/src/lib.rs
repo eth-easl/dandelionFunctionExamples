@@ -36,6 +36,7 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
+use interface::*;
 use sandbox_generated::WasmModule;
 
 // static exports for Dandelion to prepare the inputs for the WasmModule
@@ -75,43 +76,178 @@ pub static SYSTEM_DATA_IDX: usize = unsafe {
 mod interface;
 
 
-// a wrapper around WasmModule
-/*
-mod wrapper {
-    extern crate sandbox_generated;
+fn move_sysdata_to_region_and_duplicate_struct(
+    dandelion_sysdata: &mut [u8],
+    wasm_sysdata_region: &mut [u8],
+    wasm_sysdata_struct_sdk: &mut DandelionSystemData,
+) {
+    // (1) copy all system data into the pre-allocated region in wasm memory
 
-    pub struct WasmModule(pub sandbox_generated::WasmModule);
+    // notice that the pointers in the system data are valid because
+    // Dandelion respected the memory layout of the WasmModule
+    // via get_sysdata_wasm_mem_offset()
 
-    impl WasmModule {
-        #[no_mangle]
-        pub const fn new() -> Self {
-            Self (sandbox_generated::WasmModule::new())
-        }
-        #[no_mangle]
-        pub fn run(&mut self) -> Option<()> {
-            self.0._start()
+    wasm_sysdata_region.copy_from_slice(dandelion_sysdata);
+
+    // (2) duplicate the DandelionSystemData struct in wasm memory where
+    //   the __system_data struct of the function SDK is located
+
+    // the memory for the __system_data struct of the function SDK is stored
+    // somewhere else in wasm memory
+    // we need to copy the DandelionSystemData struct from dandelion_sysdata
+    // to the __system_data struct in wasm memory, and fix the pointers
+    // in that struct to point to the correct locations in the memory we
+    // just copied
+
+    // TODO: we can avoid this by changing the function sdk such that
+    //       __system_data is a _pointer_ to the DandelionSystemData struct
+
+    // extract DandelionSystemData struct from dandelion_sysdata
+    let dandelion_sysdata_struct: &mut DandelionSystemData = unsafe {
+        &mut *(dandelion_sysdata.as_mut_ptr() as *mut DandelionSystemData)
+    };
+
+    // convert to a slice of bytes
+    let dandelion_sysdata_struct_region: &mut [u8] = unsafe {
+        core::slice::from_raw_parts_mut(
+            dandelion_sysdata_struct as *mut DandelionSystemData as *mut u8,
+            core::mem::size_of::<DandelionSystemData>()
+        )
+    };
+
+    // convert to a slice of bytes
+    let wasm_sysdata_struct_region: &mut [u8] = unsafe {
+        core::slice::from_raw_parts_mut(
+            wasm_sysdata_struct_sdk as *mut DandelionSystemData as *mut u8,
+            core::mem::size_of::<DandelionSystemData>()
+        )
+    };
+
+    // copy the DandelionSystemData struct to the SDK's __system_data struct
+    wasm_sysdata_struct_region.copy_from_slice(dandelion_sysdata_struct_region);
+
+    // (3) fix the pointers in the SDK's __system_data struct to point to the data
+    //   we put into the pre-allocated system data region in wasm memory
+
+    // the offset we need to add to the pointers in the __system_data struct
+    let sysdata_ptr_offset = get_wasm_sdk_sysdata_offset() - get_wasm_sysdata_region_offset();
+
+    macro_rules! add_offset {
+        ($ptr:expr, $type:ty) => {
+            $ptr = unsafe {
+                ($ptr as *const u8).add(sysdata_ptr_offset) as $type
+            }
         }
     }
+    
+    add_offset!(wasm_sysdata_struct_sdk.heap_begin,     uintptr_t);
+    add_offset!(wasm_sysdata_struct_sdk.heap_end,       uintptr_t);
+    add_offset!(wasm_sysdata_struct_sdk.input_sets,     *const IoSetInfo);
+    add_offset!(wasm_sysdata_struct_sdk.output_sets,    *const IoSetInfo);
+    add_offset!(wasm_sysdata_struct_sdk.input_bufs,     *const IoBufferDescriptor);
+    add_offset!(wasm_sysdata_struct_sdk.output_bufs,    *const IoBufferDescriptor);
 }
- */
 
 
 #[no_mangle]
 #[allow(unused)]
-pub fn run() -> Option<()> {
+pub fn run(dandelion_sysdata: &mut[u8]) -> Option<()> {
+
+    // (0) initialize the WasmModule
+
     let mut instance = WasmModule::new();
-    instance._start()
+
+    if dandelion_sysdata.len() > get_wasm_sysdata_region_size() {
+        return None;
+    }
+
+    let wasm_sysdata_region = unsafe{
+        core::slice::from_raw_parts_mut(
+            instance.get_memory().add(get_wasm_sysdata_region_offset()),
+            dandelion_sysdata.len()
+        )
+    };
+
+    // the global location of the SDK's __system_data struct in wasm memory
+    let wasm_sysdata_struct_sdk: &mut DandelionSystemData = unsafe {
+        &mut *(instance.get_memory().add(get_wasm_sdk_sysdata_offset()) as *mut DandelionSystemData)
+    };
+
+    // (1) copy system data into wasm module's memory
+
+    move_sysdata_to_region_and_duplicate_struct(
+        dandelion_sysdata, 
+        wasm_sysdata_region, 
+        wasm_sysdata_struct_sdk
+    );
+
+    // sanity checks
+
+    // the DandelionSystemData struct at the start of the pre-allocated
+    // system data region in wasm memory
+    let wasm_sysdata_struct_in_region = unsafe {
+        &mut *(instance.get_memory().add(get_wasm_sysdata_region_offset()) as *mut DandelionSystemData)
+    };
+
+    assert_eq!(wasm_sysdata_struct_in_region.exit_code,         wasm_sysdata_struct_sdk.exit_code);
+    assert_eq!(wasm_sysdata_struct_in_region.heap_begin,        wasm_sysdata_struct_sdk.heap_begin);
+    assert_eq!(wasm_sysdata_struct_in_region.heap_end,          wasm_sysdata_struct_sdk.heap_end);
+    assert_eq!(wasm_sysdata_struct_in_region.input_sets_len,    wasm_sysdata_struct_sdk.input_sets_len);
+    assert_eq!(wasm_sysdata_struct_in_region.input_sets,        wasm_sysdata_struct_sdk.input_sets);    // should point to the same location
+    assert_eq!(wasm_sysdata_struct_in_region.output_sets_len,   wasm_sysdata_struct_sdk.output_sets_len);
+    assert_eq!(wasm_sysdata_struct_in_region.output_sets,       wasm_sysdata_struct_sdk.output_sets);   // should point to the same location
+    assert_eq!(wasm_sysdata_struct_in_region.input_bufs,        wasm_sysdata_struct_sdk.input_bufs);    // should point to the same location
+    assert_eq!(wasm_sysdata_struct_in_region.output_bufs,       wasm_sysdata_struct_sdk.output_bufs);   // should point to the same location
+
+
+    // (2) run the WasmModule
+
+    let ret = instance._start();
+
+    // (3) copy the system data back
+
+    // notice the __system_data struct in wasm memory doesn't change
+    // so we can just copy the one from the pre-allocated sysdata wasm memory
+
+    dandelion_sysdata.copy_from_slice(wasm_sysdata_region);
+
+    ret
 }
 
 #[no_mangle]
 #[allow(unused)]
-pub fn get_sysdata_wasm_mem_offset() -> usize { 
-    macro_utils::get_INTERFACE_MEM_FOR_WASM!() as usize
+pub fn get_wasm_sysdata_region_offset() -> usize { 
+    macro_utils::__wasm_sysdata_region_base!() as usize
+}
+
+#[no_mangle]
+#[allow(unused)]
+pub fn get_wasm_sysdata_region_size() -> usize { 
+    macro_utils::__wasm_sysdata_region_size!() as usize
+}
+
+fn get_wasm_sdk_sysdata_offset() -> usize { 
+    macro_utils::get___dandelion_system_data!() as usize
 }
 
 #[no_mangle]
 #[allow(unused)]
 pub fn sanity_check() -> i32 { 
-    // sandbox_generated::WasmModule::new();
-    43
+    42
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanity_check() {
+        assert_eq!(sanity_check(), 42);
+    }
+    #[test]
+    fn test_wasm_mem_size2() {
+        let mem_size = get_wasm_sysdata_region_size();
+        assert!(mem_size > 0);
+    }
 }

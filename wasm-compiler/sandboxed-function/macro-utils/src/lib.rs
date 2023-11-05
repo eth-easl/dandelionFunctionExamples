@@ -11,7 +11,8 @@ macro_rules! generate_getter {
         #[proc_macro]
         #[allow(non_snake_case)]
         pub fn $name(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
-            let module = Generated::WasmModule::new();
+            #[allow(unused_mut)]
+            let mut module = Generated::WasmModule::new();
             let $name = module.$name().unwrap();
             let $name = format!("0x{:x}", $name);
             $name.parse().unwrap()
@@ -19,4 +20,6 @@ macro_rules! generate_getter {
     }
 }
 
-generate_getter!(get_INTERFACE_MEM_FOR_WASM);
+generate_getter!(__wasm_sysdata_region_size);
+generate_getter!(__wasm_sysdata_region_base);
+generate_getter!(get___dandelion_system_data);

@@ -1,4 +1,4 @@
-use libc::{c_int, size_t, uintptr_t};
+pub use libc::{c_int, size_t, uintptr_t};
 
 #[repr(C)]
 pub struct DandelionSystemData {

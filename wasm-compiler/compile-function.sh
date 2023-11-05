@@ -1,9 +1,10 @@
-# Convenience script to compile /bin/wasm/matmul.wasm to a sandboxed binary.
+# Convenience script to compile a wasm function binary to a sandboxed native binary
 
 # constants
+FUNCTION=matmul
 BIN_DIR=bin
-SRC=${BIN_DIR}/wasm/matmul.wasm
-DST=${BIN_DIR}/matmul
+SRC=${BIN_DIR}/wasm/${FUNCTION}.wasm
+DST=${BIN_DIR}/${FUNCTION}
 
 # exit on error
 set -e
