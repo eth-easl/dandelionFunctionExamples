@@ -1,30 +1,41 @@
 pub use libc::{c_int, size_t, uintptr_t};
 
+pub trait SizedIntTrait
+where Self: Sized + Copy + Default
+{}
+
+pub mod _32_bit {
+    pub type DandelionSystemData = super::DandelionSystemData<u32, u32>;
+    impl super::SizedIntTrait for u32 {}
+}
+
+#[derive(Clone, Copy)]
 #[repr(C)]
-pub struct DandelionSystemData {
+pub struct DandelionSystemData<PtrT: SizedIntTrait, SizeT: SizedIntTrait>
+{
     pub exit_code: c_int,
-    pub heap_begin: uintptr_t,
-    pub heap_end: uintptr_t,
-    pub input_sets_len: size_t,
-    pub input_sets: *const IoSetInfo,
-    pub output_sets_len: size_t,
-    pub output_sets: *const IoSetInfo,
-    pub input_bufs: *const IoBufferDescriptor,
-    pub output_bufs: *const IoBufferDescriptor,
+    pub heap_begin: PtrT,
+    pub heap_end: PtrT,
+    pub input_sets_len: SizeT,
+    pub input_sets: PtrT,
+    pub output_sets_len: SizeT,
+    pub output_sets: PtrT,
+    pub input_bufs: PtrT,
+    pub output_bufs: PtrT,
 }
 
 #[repr(C)]
-pub struct IoSetInfo {
-    pub ident: uintptr_t,
-    pub ident_len: size_t,
-    pub offset: size_t,
+pub struct IoSetInfo<PtrT: SizedIntTrait, SizeT: SizedIntTrait> {
+    pub ident: PtrT,
+    pub ident_len: SizeT,
+    pub offset: SizeT,
 }
 
 #[repr(C)]
-pub struct IoBufferDescriptor {
-    pub ident: uintptr_t,
-    pub ident_len: size_t,
-    pub data: uintptr_t,
-    pub data_len: size_t,
-    pub key: size_t,
+pub struct IoBufferDescriptor<PtrT: SizedIntTrait, SizeT: SizedIntTrait> {
+    pub ident: PtrT,
+    pub ident_len: SizeT,
+    pub data: PtrT,
+    pub data_len: SizeT,
+    pub key: SizeT,
 }

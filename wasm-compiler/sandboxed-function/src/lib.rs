@@ -36,7 +36,7 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-use interface::*;
+use interface::_32_bit::DandelionSystemData;
 use sandbox_generated::WasmModule;
 
 // static exports for Dandelion to prepare the inputs for the WasmModule
@@ -76,7 +76,7 @@ pub static SYSTEM_DATA_IDX: usize = unsafe {
 mod interface;
 
 
-fn move_sysdata_to_region_and_duplicate_struct(
+/*fn move_sysdata_to_region_and_duplicate_struct(
     dandelion_sysdata: &mut [u8],
     wasm_sysdata_region: &mut [u8],
     wasm_sysdata_struct_sdk: &mut DandelionSystemData,
@@ -146,12 +146,14 @@ fn move_sysdata_to_region_and_duplicate_struct(
     add_offset!(wasm_sysdata_struct_sdk.output_sets,    *const IoSetInfo);
     add_offset!(wasm_sysdata_struct_sdk.input_bufs,     *const IoBufferDescriptor);
     add_offset!(wasm_sysdata_struct_sdk.output_bufs,    *const IoBufferDescriptor);
-}
+}*/
 
 
 #[no_mangle]
 #[allow(unused)]
-pub fn run(dandelion_sysdata: &mut[u8]) -> Option<()> {
+pub fn run(dandelion_sysdata: &mut[u8], sdk_system_data: &mut DandelionSystemData) -> Option<i32> {
+
+    /* old version which doesn't need a DandelionSystemData struct
 
     // (0) initialize the WasmModule
 
@@ -212,6 +214,51 @@ pub fn run(dandelion_sysdata: &mut[u8]) -> Option<()> {
     dandelion_sysdata.copy_from_slice(wasm_sysdata_region);
 
     ret
+    */
+
+    // (0) initialize the WasmModule
+
+    let mut instance = WasmModule::new();
+
+    if dandelion_sysdata.len() > get_wasm_sysdata_region_size() {
+        return None;
+    }
+
+    // the pre-allocated region for system data in wasm memory
+    let wasm_sysdata_region: &mut [u8] = unsafe{
+        core::slice::from_raw_parts_mut(
+            instance.get_memory().add(get_wasm_sysdata_region_offset()),
+            dandelion_sysdata.len()
+        )
+    };
+
+    // the global location of the SDK's __system_data struct in wasm memory
+    let wasm_sysdata_struct_sdk: &mut DandelionSystemData = unsafe {
+        &mut *(instance.get_memory().add(get_wasm_sdk_sysdata_offset()) as *mut DandelionSystemData)
+    };
+
+    // (1) copy dandelion_sysdata into the pre-allocated region in wasm memory
+
+    wasm_sysdata_region[..dandelion_sysdata.len()].copy_from_slice(dandelion_sysdata);
+
+    // (2) copy the sdk system data struct to wasm memory
+
+    *wasm_sysdata_struct_sdk = *sdk_system_data;
+
+    // (3) run the WasmModule
+
+    let ret = instance._start();
+
+    // (4) copy the system data back
+
+    dandelion_sysdata.copy_from_slice(wasm_sysdata_region);
+
+    // (5) copy the sdk system data struct back
+
+    *sdk_system_data = *wasm_sysdata_struct_sdk;
+
+    Some(sdk_system_data.exit_code)
+
 }
 
 #[no_mangle]
@@ -226,8 +273,31 @@ pub fn get_wasm_sysdata_region_size() -> usize {
     macro_utils::__wasm_sysdata_region_size!() as usize
 }
 
-fn get_wasm_sdk_sysdata_offset() -> usize { 
+#[no_mangle]
+#[allow(unused)]
+pub fn get_wasm_sdk_sysdata_offset() -> usize { 
     macro_utils::get___dandelion_system_data!() as usize
+}
+
+#[no_mangle]
+#[allow(unused)]
+pub fn get_sdk_heap_size() -> usize {
+    macro_utils::__wasm_sdk_heap_size!() as usize * 64 * 1024
+}
+
+#[no_mangle]
+#[allow(unused)]
+pub fn get_sdk_heap_base() -> usize {
+    let wasm_heap_base = macro_utils::get___heap_base!() as usize;
+    let wasm_mem_size = macro_utils::get_memory_size!() as usize;
+    // TODO this assumes that the heap comes last. I think this is always the case,
+    //      but I'm not 100% sure, there are compiler options that change the
+    //      memory layout (e.g. --stack-first). 
+    //      Do not use the initial stack pointer here, as this is not the start
+    //      of the heap if the code was compiled with --stack-first.
+    let wasm_heap_size = wasm_mem_size - wasm_heap_base;
+    let sdk_heap_size = get_sdk_heap_size();
+    wasm_heap_base + wasm_heap_size - sdk_heap_size
 }
 
 #[no_mangle]
@@ -247,7 +317,9 @@ mod tests {
     }
     #[test]
     fn test_wasm_mem_size2() {
-        let mem_size = get_wasm_sysdata_region_size();
-        assert!(mem_size > 0);
+        let region_size = get_wasm_sysdata_region_size();
+        let sdk_heap_size = get_sdk_heap_size();
+        let sdk_heap_base = get_sdk_heap_base();
+        assert!(region_size > 0);
     }
 }

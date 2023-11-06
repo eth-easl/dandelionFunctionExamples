@@ -22,4 +22,15 @@ macro_rules! generate_getter {
 
 generate_getter!(__wasm_sysdata_region_size);
 generate_getter!(__wasm_sysdata_region_base);
+generate_getter!(__wasm_sdk_heap_size); // in pages!
+generate_getter!(get___heap_base);
 generate_getter!(get___dandelion_system_data);
+
+#[proc_macro]
+/// The wasm module's memory size in bytes.
+pub fn get_memory_size(_: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let module = Generated::WasmModule::new();
+    let mem_size = module.get_memory_size();
+    let mem_size = format!("0x{:x}", mem_size);
+    mem_size.parse().unwrap()
+}
