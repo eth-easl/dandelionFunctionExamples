@@ -1,7 +1,7 @@
 # Convenience script to compile a wasm function binary to a sandboxed native binary
 
 # constants
-FUNCTION=wasm_test
+FUNCTION=matmul
 BIN_DIR=bin
 SRC=${BIN_DIR}/wasm/${FUNCTION}.wasm
 DST=${BIN_DIR}/${FUNCTION}
@@ -20,9 +20,10 @@ cd ./rWasm
 rm -rf ./generated
 WASM_HEAP_SIZE=$(($WASM_MIN_HEAP_SIZE + $SDK_HEAP_SIZE))
 cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size ${WASM_HEAP_SIZE} ../${SRC}
+cd ..
 
 # compile function
-cd ../sandboxed-function
+cd ./sandboxed-function
 cargo clean
 RUSTFLAGS="-C relocation-model=pic" cargo +nightly build --release
 

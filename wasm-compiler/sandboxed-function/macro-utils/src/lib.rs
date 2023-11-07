@@ -20,8 +20,6 @@ macro_rules! generate_getter {
     }
 }
 
-generate_getter!(__wasm_sysdata_region_size);
-generate_getter!(__wasm_sysdata_region_base);
 generate_getter!(__wasm_sdk_heap_size); // in pages!
 generate_getter!(get___heap_base);
 generate_getter!(get___dandelion_system_data);

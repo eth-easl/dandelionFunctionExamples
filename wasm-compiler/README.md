@@ -16,7 +16,7 @@
 
 # compile
 
-`compile-matmul.sh` compiles `matmul.wasm` to a native function binary.
+`compile-function.sh` compiles the function `$FUNCTION` defined in the script to a native binary, invoking the rWasm compiler and then compiling a wrapper crate.
 
 ## 1. rWasm: `<input>.wasm` -> `sandbox-generated` Rust crate
 
@@ -31,7 +31,7 @@ cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size <#wasm-m
 In `./sandboxed-function` run
 
 ```bash
-cargo build --release
+cargo +nightly build --release
 ```
 
 ### cross-compiling to aarch64
