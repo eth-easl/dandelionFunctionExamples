@@ -10,7 +10,7 @@ project(function_examples LANGUAGES C CXX ASM)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 else()
-  message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_${LANG}_COMPILER_ID}")
+  message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_C_COMPILER_ID}")
 endif()
 
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
@@ -71,9 +71,12 @@ target_link_options(dlibc INTERFACE -nostdlib)
 
 # cheri compile flags
 if("${DANDELION_PLATFORM}" STREQUAL "cheri")
-set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
-set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
-add_compile_options(${NOCAP_COMPILE_FLAGS})
+add_compile_options(-march=morello -mabi=aapcs)
+add_link_options(-march=morello -mabi=aapcs -fuse-ld=lld -Xlinker --image-base=0x10000)
+get_property(CROSS_COMPILE_OPTIONS DIRECTORY PROPERTY COMPILE_OPTIONS)
+string(REPLACE ";" " " CROSS_COMPILE_OPTIONS "${CROSS_COMPILE_OPTIONS}")
+get_property(CROSS_LINK_OPTIONS DIRECTORY PROPERTY LINK_OPTIONS)
+string(REPLACE ";" " " CROSS_LINK_OPTIONS "${CROSS_LINK_OPTIONS}")
 endif()
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" functionInterface)
@@ -81,7 +84,10 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" fun
 # add folders with function examples
 # add_subdirectory(access)
 add_subdirectory(basic)
+add_subdirectory(busy)
 add_subdirectory(matmac)
 add_subdirectory(matmul)
-add_subdirectory(stdio)
+# dependent on dlibc
+# add_subdirectory(image_processing)
 add_subdirectory(files)
+add_subdirectory(stdio)
