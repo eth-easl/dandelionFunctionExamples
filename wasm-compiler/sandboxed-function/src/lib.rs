@@ -78,7 +78,8 @@ pub fn get_wasm_sdk_sysdata_offset() -> usize {
 #[no_mangle]
 #[allow(unused)]
 pub fn get_sdk_heap_size() -> usize {
-    macro_utils::__wasm_sdk_heap_size!() as usize * 64 * 1024
+    // TODO: make this configurable
+    65536 * 1 // one wasm page
 }
 
 #[no_mangle]
@@ -105,16 +106,12 @@ pub fn sanity_check() -> i32 {
 
 #[cfg(test)]
 mod tests {
+    // cdylib tests must be in the same file
+
     use super::*;
 
     #[test]
     fn test_sanity_check() {
         assert_eq!(sanity_check(), 42);
-    }
-    #[test]
-    fn test_wasm_mem_size2() {
-        let sdk_heap_size = get_sdk_heap_size();
-        let sdk_heap_base = get_sdk_heap_base();
-        assert!(true);
     }
 }
