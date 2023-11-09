@@ -2,7 +2,7 @@
 
 # constants
 FUNCTION=matmul
-BIN_DIR=bin
+BIN_DIR=binaries
 SRC=${BIN_DIR}/wasm/${FUNCTION}.wasm
 DST=${BIN_DIR}/${FUNCTION}
 SDK_HEAP_SIZE=1 # in pages
@@ -27,7 +27,7 @@ cd ./sandboxed-function
 cargo clean
 RUSTFLAGS="-C relocation-model=pic" cargo +nightly build --release
 
-# copy binary to bin/
+# copy binary to binaries/
 cp ./target/release/libsandboxed_function.so ../${DST}
 
 cd "$(dirname "$0")"

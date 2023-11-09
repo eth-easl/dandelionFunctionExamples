@@ -11,7 +11,7 @@
 ```
 
 - makes the function examples against the Dandelion SDK targeting `wasm32` in clang, and Dandelion platform `wasm`
-- generates .wasm binaries and stores them in `bin/wasm`
+- generates .wasm binaries and stores them in `binaries/wasm`
 - adds .wat files to `bin/wasm` for human-readable versions of the .wasm binaries
 
 # compile
@@ -23,7 +23,7 @@
 In `./rWasm` run
     
 ```bash
-cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size <#wasm-mem-pages> ../bin/wasm/<input-file>.wasm
+cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size <#wasm-mem-pages> ../binaries/wasm/<input-file>.wasm
 ```
 
 ## 2. sandboxed-function: `sandbox-generated` Rust crate -> native function binary
