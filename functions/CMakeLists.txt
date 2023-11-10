@@ -17,11 +17,6 @@ else()
   message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_C_COMPILER_ID}")
 endif()
 
-# WebAssembly flags
-if("${DANDELION_PLATFORM}" STREQUAL "wasm")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined")
-endif()
-
 # find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
 # execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
 # cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
@@ -78,19 +73,28 @@ endif()
 # target_link_libraries(dlibc INTERFACE ${RUNTIME_LIB} ${MLIBC_LIBS})
 # target_link_options(dlibc INTERFACE -nostdlib)
 
-# # cheri compile flags
-# if("${DANDELION_PLATFORM}" STREQUAL "cheri")
-# set(NOCAP_COMPILE_FLAGS -march=morello -mabi=aapcs)
-# set(NOCAP_LINK_FLAGS -march=morello -mabi=aapcs -fuse-ld=lld)
-# add_compile_options(${NOCAP_COMPILE_FLAGS})
-# endif()
+# cheri compile flags
+if("${DANDELION_PLATFORM}" STREQUAL "cheri")
+add_compile_options(-march=morello -mabi=aapcs)
+add_link_options(-march=morello -mabi=aapcs -fuse-ld=lld -Xlinker --image-base=0x10000)
+get_property(CROSS_COMPILE_OPTIONS DIRECTORY PROPERTY COMPILE_OPTIONS)
+string(REPLACE ";" " " CROSS_COMPILE_OPTIONS "${CROSS_COMPILE_OPTIONS}")
+get_property(CROSS_LINK_OPTIONS DIRECTORY PROPERTY LINK_OPTIONS)
+string(REPLACE ";" " " CROSS_LINK_OPTIONS "${CROSS_LINK_OPTIONS}")
+# WebAssembly flags
+elseif("${DANDELION_PLATFORM}" STREQUAL "wasm")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined")
+endif()
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" functionInterface)
 
 # add folders with function examples
 # add_subdirectory(access)
 add_subdirectory(basic)
+add_subdirectory(busy)
 add_subdirectory(matmac)
 add_subdirectory(matmul)
-# add_subdirectory(stdio)
-# add_subdirectory(files)
+# dependent on dlibc
+# add_subdirectory(image_processing)
+add_subdirectory(files)
+add_subdirectory(stdio)
