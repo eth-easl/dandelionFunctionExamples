@@ -6,6 +6,7 @@
 
 // Project Internal Libraries
 #include "dandelion/runtime.h"
+#include "dandelion/crt.h"
 
 // compute a*b + c, if any is size zero replace by the identity element for the
 // operation, the dimensions in the set for the matrix size give the rows and
@@ -96,7 +97,4 @@ int mat_mac() {
 // takes up to 4 inputs sets, first needs to contain 2 int64 with the number of
 // rows and columns of the output matrix. Sets 1 to 3 contain a,b,c respectively
 // for a*b+c, where one of them can be left out.
-void _start(void) {
-  dandelion_init();
-  dandelion_exit(mat_mac());
-}
+DANDELION_ENTRY(mat_mac)
