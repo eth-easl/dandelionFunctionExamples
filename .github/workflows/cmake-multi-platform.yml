@@ -36,12 +36,6 @@ jobs:
         sudo apt-get install python3 python3-pip python3-setuptools python3-wheel ninja-build
         pip3 install meson
 
-    - name: Install ssh token for non actions
-      shell: bash
-      run: |
-        eval `ssh-agent -s`
-        ssh-add - <<< '${{ secrets.DANDELION_READ_SECRET }}'
-
     - uses: actions/checkout@v3
       with:
         submodules: recursive
@@ -65,6 +59,12 @@ jobs:
         -S ${{ steps.strings.outputs.cmake-root }}
         -DDANDELION_PLATFORM=${{ matrix.platform }}
         -DTARGET_CPU=${{ matrix.cpu }}
+
+    - name: Install ssh token for non actions
+      shell: bash
+      run: |
+        eval `ssh-agent -s`
+        ssh-add - <<< '${{ secrets.DANDELION_READ_SECRET }}'
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
