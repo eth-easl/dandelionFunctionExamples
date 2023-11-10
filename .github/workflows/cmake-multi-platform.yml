@@ -25,6 +25,9 @@ jobs:
       matrix:
         cpu: ["aarch64", "x86_64"]
         platform: ["cheri", "mmu_linux", "mmu_freebsd"]
+        exclude:
+          - cpu: "x86_64"
+            platform: "cheri"
 
     steps:
     - name: Setup packages
@@ -37,12 +40,12 @@ jobs:
       shell: bash
       run: |
         eval `ssh-agent -s`
-        ssh-add - <<< '${{ secrets.GH_ACCESS_TOKEN }}'
+        ssh-add - <<< '${{ secrets.DANDELION_READ_SECRET }}'
 
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-        token: ${{ secrets.GH_ACCESS_TOKEN }}
+        token: ${{ secrets.DANDELION_READ_SECRET }}
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
