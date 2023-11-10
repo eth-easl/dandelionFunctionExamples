@@ -35,7 +35,7 @@ jobs:
 
     - name: Install ssh token for non actions
       shell: bash
-      run: >
+      run: |
         eval `ssh-agent -s`
         ssh-add - <<< '${{ secrets.GH_ACCESS_TOKEN }}'
 
