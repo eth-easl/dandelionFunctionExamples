@@ -48,8 +48,8 @@ jobs:
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_C_COMPILER=clang
         -S ${{ steps.strings.outputs.cmake-root }}
-        -DDANDELION_PLATFORM=matrix.platform
-        -DTARGET_CPU=matrix.cpu
+        -DDANDELION_PLATFORM=${{ matrix.platform }}
+        -DTARGET_CPU=${{ matrix.cpu }}
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
