@@ -60,11 +60,8 @@ jobs:
         -DDANDELION_PLATFORM=${{ matrix.platform }}
         -DTARGET_CPU=${{ matrix.cpu }}
 
-    - name: Install ssh token for non actions
-      shell: bash
+    - name: Build
       run: |
         eval `ssh-agent -s`
         ssh-add - <<< '${{ secrets.DANDELION_READ_SECRET }}'
-
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+        cmake --build ${{ steps.strings.outputs.build-output-dir }}
