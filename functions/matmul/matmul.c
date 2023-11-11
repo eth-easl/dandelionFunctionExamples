@@ -6,6 +6,7 @@
 
 // Project Internal Libraries
 #include "dandelion/runtime.h"
+#include "dandelion/crt.h"
 
 int mat_mul() {
   // check we get expected inputs
@@ -49,7 +50,4 @@ int mat_mul() {
 // and a square matrix of int64s as well as a third input
 // that is big enough to store the output (to avoid malloc for this simple
 // test)
-void _start(void) {
-  dandelion_init();
-  dandelion_exit(mat_mul());
-}
+DANDELION_ENTRY(mat_mul)
