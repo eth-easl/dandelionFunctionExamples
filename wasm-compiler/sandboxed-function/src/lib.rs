@@ -30,11 +30,11 @@ mod interface;
 #[allow(unused)]
 pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemData) -> Option<i32> {
 
-    // [initialize the WasmModule]
+    // initialize the WasmModule
     let mut instance = WasmModule::new();
 
     if dandelion_sdk_heap.len() > get_sdk_heap_size() {
-        return None;
+        return Some(-1);
     }
 
     // the global location of the SDK's __system_data struct in wasm memory
@@ -50,23 +50,23 @@ pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemDa
         )
     };
 
-    // [copy dandelion_sysdata into the SDK heap]
+    // copy dandelion_sysdata into the SDK heap
     wasm_sdk_heap[..dandelion_sdk_heap.len()].copy_from_slice(dandelion_sdk_heap);
 
-    // [copy the sdk system data struct to wasm memory]
+    // copy the sdk system data struct to wasm memory
     *wasm_sysdata_struct_sdk = *sdk_system_data;
 
-    // [run the WasmModule]
+    // run the WasmModule
     let ret = instance._start();
-    if ret.is_none() { return Some(-1); }
+    if ret.is_none() { return None; }
 
-    // [copy the system data back]
+    // copy the system data back
     dandelion_sdk_heap.copy_from_slice(wasm_sdk_heap);
 
-    // [copy the sdk system data struct back]
+    // copy the sdk system data struct back
     *sdk_system_data = *wasm_sysdata_struct_sdk;
 
-    Some(wasm_sysdata_struct_sdk.exit_code)
+    Some(0)
 }
 
 #[no_mangle]
