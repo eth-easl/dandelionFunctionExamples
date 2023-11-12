@@ -28,10 +28,10 @@ mod interface;
 
 #[no_mangle]
 #[allow(unused)]
-pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemData) -> Option<i32> {
-
+pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemData, mem_buf: &mut [u8]) -> Option<i32> {
+    
     // initialize the WasmModule
-    let mut instance = WasmModule::new();
+    let mut instance = WasmModule::new(mem_buf);
 
     if dandelion_sdk_heap.len() > get_sdk_heap_size() {
         return Some(-1);
@@ -59,14 +59,20 @@ pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemDa
     // run the WasmModule
     let ret = instance._start();
     if ret.is_none() { return None; }
-
+    
     // copy the system data back
     dandelion_sdk_heap.copy_from_slice(wasm_sdk_heap);
-
+    
     // copy the sdk system data struct back
     *sdk_system_data = *wasm_sysdata_struct_sdk;
 
     Some(0)
+}
+
+#[no_mangle]
+#[allow(unused)]
+pub fn get_wasm_mem_size() -> usize {
+    macro_utils::wasm_mem_size!() as usize
 }
 
 #[no_mangle]
@@ -77,16 +83,9 @@ pub fn get_wasm_sdk_sysdata_offset() -> usize {
 
 #[no_mangle]
 #[allow(unused)]
-pub fn get_sdk_heap_size() -> usize {
-    // TODO: make this configurable
-    65536 * 1 // one wasm page
-}
-
-#[no_mangle]
-#[allow(unused)]
 pub fn get_sdk_heap_base() -> usize {
     let wasm_heap_base = macro_utils::get___heap_base!() as usize;
-    let wasm_mem_size = macro_utils::get_memory_size!() as usize;
+    let wasm_mem_size = get_wasm_mem_size();
     // TODO this assumes that the heap comes last. I think this is always the case,
     //      but I'm not 100% sure, there are compiler options that change the
     //      memory layout (e.g. --stack-first). 
@@ -95,6 +94,12 @@ pub fn get_sdk_heap_base() -> usize {
     let wasm_heap_size = wasm_mem_size - wasm_heap_base;
     let sdk_heap_size = get_sdk_heap_size();
     wasm_heap_base + wasm_heap_size - sdk_heap_size
+}
+
+#[no_mangle]
+#[allow(unused)]
+pub fn get_sdk_heap_size() -> usize {
+    macro_utils::sdk_heap_size!()
 }
 
 #[no_mangle]
@@ -113,5 +118,19 @@ mod tests {
     #[test]
     fn test_sanity_check() {
         assert_eq!(sanity_check(), 42);
+    }
+
+    #[test]
+    fn mem_size() {
+        let wasm_mem_size = get_wasm_mem_size();
+        println!("wasm memory size: {}", wasm_mem_size);
+        assert!(wasm_mem_size > 0);
+    }
+
+    #[test]
+    fn sdk_heap_base() {
+        let sdk_heap_base = get_sdk_heap_base();
+        println!("sdk heap base: {}", sdk_heap_base);
+        assert!(sdk_heap_base > 0);
     }
 }

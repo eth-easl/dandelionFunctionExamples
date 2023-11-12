@@ -10,3 +10,4 @@ crate-type = ["proc-macro"]
 proc-macro2 = "1.0.69"
 syn = "2.0.38"
 sandbox-generated = { path = "../../rWasm/generated" }
+konst = "0.3.6"
