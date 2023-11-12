@@ -28,8 +28,18 @@ mod interface;
 
 #[no_mangle]
 #[allow(unused)]
-pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemData, mem_buf: &mut [u8]) -> Option<i32> {
+pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemData, mem_buf: Option<&mut [u8]>) -> Option<i32> {
     
+    // if no memory buffer was provided, allocate one
+    let mut new_wasm_mem = match mem_buf {
+        Some(_) => None,
+        None => Some([0u8; get_wasm_mem_size()]),
+    };
+    let mem_buf = match mem_buf {
+        Some(buf) => buf,
+        None => new_wasm_mem.as_mut().unwrap(),
+    };
+
     // initialize the WasmModule
     let mut instance = WasmModule::new(mem_buf);
 
@@ -71,19 +81,19 @@ pub fn run(dandelion_sdk_heap: &mut[u8], sdk_system_data: &mut DandelionSystemDa
 
 #[no_mangle]
 #[allow(unused)]
-pub fn get_wasm_mem_size() -> usize {
+pub const fn get_wasm_mem_size() -> usize {
     macro_utils::wasm_mem_size!() as usize
 }
 
 #[no_mangle]
 #[allow(unused)]
-pub fn get_wasm_sdk_sysdata_offset() -> usize { 
+pub const fn get_wasm_sdk_sysdata_offset() -> usize { 
     macro_utils::get___dandelion_system_data!() as usize
 }
 
 #[no_mangle]
 #[allow(unused)]
-pub fn get_sdk_heap_base() -> usize {
+pub const fn get_sdk_heap_base() -> usize {
     let wasm_heap_base = macro_utils::get___heap_base!() as usize;
     let wasm_mem_size = get_wasm_mem_size();
     // TODO this assumes that the heap comes last. I think this is always the case,
@@ -98,7 +108,7 @@ pub fn get_sdk_heap_base() -> usize {
 
 #[no_mangle]
 #[allow(unused)]
-pub fn get_sdk_heap_size() -> usize {
+pub const fn get_sdk_heap_size() -> usize {
     macro_utils::sdk_heap_size!()
 }
 
