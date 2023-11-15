@@ -39,15 +39,3 @@ pub struct IoBufferDescriptor<PtrT: SizedIntTrait, SizeT: SizedIntTrait> {
     pub data_len: SizeT,
     pub key: SizeT,
 }
-
-pub struct WasmStackInit<'a> {
-    pub dandelion_sdk_heap: &'a mut[u8],
-    pub sdk_system_data: &'a mut _32_bit::DandelionSystemData,
-}
-pub struct WasmHeapInit<'a> {
-    pub wasm_mem: &'a mut [u8],
-}
-pub enum WasmInit<'a> {
-    Stack(WasmStackInit<'a>),
-    Heap(WasmHeapInit<'a>),
-}
