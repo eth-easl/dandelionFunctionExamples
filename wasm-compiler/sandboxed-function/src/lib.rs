@@ -22,58 +22,13 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 mod interface;
-use interface::{_32_bit::DandelionSystemData, WasmInit, WasmStackInit, WasmHeapInit};
+use interface::_32_bit::DandelionSystemData;
 use sandbox_generated::WasmModule;
 
+#[no_mangle]
+#[allow(unused)]
+pub fn run(wasm_mem: &mut [u8]) -> Option<i32> {
 
-/// Allocate all wasm memory here, on the stack.
-/// Disadvantage:
-///      This requires copying the sdk heap and system data struct into 
-///      wasm memory and back.
-/// Advantage:
-///      The WasmModule does not directly write to the buffer from
-///      Dandelion, only to the one we allocate here.
-fn run_alloc_mem_buf(init: WasmStackInit) -> Option<i32> {
-    let WasmStackInit{dandelion_sdk_heap, sdk_system_data} = init;
-
-    if dandelion_sdk_heap.len() > get_sdk_heap_size() {
-        return Some(-1);
-    }
-
-    let mut wasm_mem = [0u8; get_wasm_mem_size()];
-
-    // the global location of the SDK's __system_data struct in wasm memory
-    let wasm_sysdata_struct_sdk: &mut DandelionSystemData = unsafe {
-        &mut *(wasm_mem.as_mut_ptr().add(get_wasm_sdk_sysdata_offset()) as *mut DandelionSystemData)
-    };
-
-    // copy dandelion_sysdata into the SDK heap
-    wasm_mem[get_sdk_heap_base()..].copy_from_slice(dandelion_sdk_heap);
-
-    // copy the sdk system data struct to wasm memory
-    *wasm_sysdata_struct_sdk = *sdk_system_data;
-
-    // run the WasmModule
-    let mut instance = WasmModule::new(&mut wasm_mem);
-    let ret = instance._start();
-    
-    if ret.is_none() { 
-        // the wasm module crashed
-        return None; 
-    }
-    
-    // copy the sdk heap back
-    dandelion_sdk_heap.copy_from_slice(&wasm_mem[get_sdk_heap_base()..]);
-    
-    // copy the sdk system data struct back
-    *sdk_system_data = *wasm_sysdata_struct_sdk;
-
-    Some(0)
-}
-
-/// Use the buffer provided by Dandelion as wasm memory.
-fn run_extern_mem_buf(init: WasmHeapInit) -> Option<i32> {
-    let WasmHeapInit{wasm_mem} = init;
     let mut instance = WasmModule::new(wasm_mem);
     let ret = instance._start();
     
@@ -83,15 +38,6 @@ fn run_extern_mem_buf(init: WasmHeapInit) -> Option<i32> {
     }
 
     Some(0)
-}
-
-#[no_mangle]
-#[allow(unused)]
-pub fn run(init: WasmInit) -> Option<i32> {
-    match init {
-        WasmInit::Stack(init) => run_alloc_mem_buf(init),
-        WasmInit::Heap(init) => run_extern_mem_buf(init),
-    }
 }
 
 #[no_mangle]
@@ -137,25 +83,12 @@ pub fn sanity_check() -> i32 {
 #[cfg(test)]
 mod tests {
     // cdylib tests must be in the same file
-
     use super::*;
-
-    #[test]
-    fn test_sanity_check() {
-        assert_eq!(sanity_check(), 42);
-    }
 
     #[test]
     fn mem_size() {
         let wasm_mem_size = get_wasm_mem_size();
         println!("wasm memory size: {}", wasm_mem_size);
         assert!(wasm_mem_size > 0);
-    }
-
-    #[test]
-    fn sdk_heap_base() {
-        let sdk_heap_base = get_sdk_heap_base();
-        println!("sdk heap base: {}", sdk_heap_base);
-        assert!(sdk_heap_base > 0);
     }
 }
