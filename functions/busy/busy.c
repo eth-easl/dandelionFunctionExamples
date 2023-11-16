@@ -6,6 +6,7 @@
 
 // Project Internal Libraries
 #include "dandelion/runtime.h"
+#include "dandelion/crt.h"
 
 static uint64_t counter;
 
@@ -39,7 +40,4 @@ int busy() {
 // and a square matrix of int64s as well as a third input
 // that is big enough to store the output (to avoid malloc for this simple
 // test)
-void _start(void) {
-  dandelion_init();
-  dandelion_exit(busy());
-}
+DANDELION_ENTRY(busy)
