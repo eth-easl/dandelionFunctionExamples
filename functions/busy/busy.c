@@ -22,7 +22,7 @@ int busy() {
 
   counter = 0;
 
-  for (uint64_t iteration = 0; iteration < iterations; iteration++) {
+  for (uint64_t iteration = 1; iteration <= iterations; iteration++) {
     counter += ((iteration & 0x1) << 1);
   }
 
