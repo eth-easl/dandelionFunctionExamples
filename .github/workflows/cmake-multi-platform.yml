@@ -25,21 +25,11 @@ jobs:
       matrix:
         cpu: ["aarch64", "x86_64"]
         platform: ["cheri", "mmu_linux", "mmu_freebsd"]
-        exclude:
-          - cpu: "x86_64"
-            platform: "cheri"
 
     steps:
-    - name: Setup packages
-      shell: bash
-      run: |
-        sudo apt-get install python3 python3-pip python3-setuptools python3-wheel ninja-build
-        pip3 install meson
-
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-        token: ${{ secrets.GH_ACCESS_TOKEN }}
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -57,11 +47,8 @@ jobs:
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_C_COMPILER=clang
         -S ${{ steps.strings.outputs.cmake-root }}
-        -DDANDELION_PLATFORM=${{ matrix.platform }}
-        -DTARGET_CPU=${{ matrix.cpu }}
+        -DDANDELION_PLATFORM=matrix.platform
+        -DTARGET_CPU=matrix.cpu
 
     - name: Build
-      run: |
-        eval `ssh-agent -s`
-        ssh-add - <<< '${{ secrets.DANDELION_READ_SECRET }}'
-        cmake --build ${{ steps.strings.outputs.build-output-dir }}
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}

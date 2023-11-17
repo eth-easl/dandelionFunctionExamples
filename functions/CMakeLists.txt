@@ -67,7 +67,7 @@ set(MLIBC_LIBS
   ${COMP_RTLIB}
 )
 target_link_libraries(dlibc INTERFACE ${RUNTIME_LIB} ${MLIBC_LIBS})
-target_link_options(dlibc INTERFACE -nostdlib)
+target_link_options(dlibc INTERFACE -nostdlib -fuse-ld=lld -Xlinker --image-base=0x10000)
 
 # cheri compile flags
 if("${DANDELION_PLATFORM}" STREQUAL "cheri")
