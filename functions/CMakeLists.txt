@@ -9,10 +9,6 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source build detected")
 endif()
 
-# we are cross-compiling; prevents:
-# https://stackoverflow.com/questions/53633705/cmake-the-c-compiler-is-not-able-to-compile-a-simple-test-program
-set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-
 project(function_examples LANGUAGES C CXX ASM)
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
