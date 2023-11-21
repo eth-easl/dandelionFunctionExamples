@@ -2,6 +2,7 @@
 
 // when compiling to a library, removes core's libc dependency
 // on memset, memcpy, etc.
+#[cfg(not(target_arch = "aarch64"))]
 extern crate compiler_builtins;
 
 /// This crate is a wrapper around the transpiled Rust code generated 
@@ -21,8 +22,7 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-mod interface;
-use interface::_32_bit::DandelionSystemData;
+// use interface::_32_bit::DandelionSystemData;
 use sandbox_generated::WasmModule;
 
 #[no_mangle]

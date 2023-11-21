@@ -16,36 +16,20 @@
 
 # compile
 
-`compile-function.sh` compiles the function `$FUNCTION` defined in the script to a native binary, invoking the rWasm compiler and then compiling a wrapper crate.
+`compile-function.sh` compiles the functions listed in the script to native binaries, invoking the rWasm compiler and then compiling a wrapper crate for each.
 
-## 1. rWasm: `<input>.wasm` -> `sandbox-generated` Rust crate
+**Note**: By setting `AARCH64_CROSS_COMPILE` in the script it will attempt to **cross**-compile to `aarch64-unknown-linux-gnu`. When cross-compiling to another target, make sure to fix the `compiler_builtins` dependency in `sandboxed-function`.
 
-In `./rWasm` run
-    
-```bash
-cargo run -- --crate-name sandbox-generated --no-alloc --fixed-mem-size <#wasm-mem-pages> ../binaries/wasm/<input-file>.wasm
-```
-
-## 2. sandboxed-function: `sandbox-generated` Rust crate -> native function binary
-
-In `./sandboxed-function` run
-
-```bash
-cargo +nightly build --release
-```
-
-### cross-compiling to aarch64
-
-Prerequisites:
+aarch64 cross-compilation prerequisites:
 
 - add Rust target
-    - need to use `nightly` for to cargo's `-Z build-std` feature
+    - need to use `nightly` for cargo's `-Z build-std` feature
     
     ```bash
     rustup +nightly target add aarch64-unknown-linux-gnu
     ```
 - install rustup component `rust-src`
-    - contains the Rust standard library source code
+    - contains the Rust standard (including core) library source code
     - required by cargo's `-Z build-std` feature to cross-compile `core` in our case
     
     ```bash
@@ -62,9 +46,3 @@ Prerequisites:
     [target.aarch64-unknown-linux-gnu]
     linker = "aarch64-linux-gnu-gcc"
     ```
-
-In `./sandboxed-function` now run instead
-
-```bash
-cargo +nightly build --release -Z build-std=core --target aarch64-unknown-linux-gnu
-```

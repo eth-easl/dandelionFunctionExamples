@@ -12,6 +12,10 @@ path = "src/lib.rs"
 sandbox-generated = { path = "../rWasm/generated" }
 macro-utils = { path = "./macro-utils" }
 libc = { version = "0.2.149", default-features = false }    # default features depend on std
+
+[target.'cfg(not(target_arch = "aarch64"))'.dependencies]
+# don't include compiler_builtins when cross-compiling
+# cargo adds it automatically in that case
 compiler_builtins = { git = "https://github.com/rust-lang/compiler-builtins", features = ["mem"] }
 
 [profile.dev]

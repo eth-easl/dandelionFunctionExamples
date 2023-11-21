@@ -6,6 +6,14 @@
   (type (;4;) (func (param i32) (result i32)))
   (type (;5;) (func (param i32 i32)))
   (func $__wasm_call_ctors (type 0))
+  (func $_start (type 0)
+    call $__dandelion_entry
+    return
+    unreachable)
+  (func $__dandelion_entry (type 0)
+    call $dandelion_init
+    call $mat_mul
+    call $dandelion_exit)
   (func $mat_mul (type 1) (result i32)
     (local i32 i32 i32 i32 i32 i64 i64 i64 i32 i32 i32 i32 i32 i32 i32 i64 i64 i64 i32 i32 i32 i32 i32 i64 i32 i64)
     global.get $__stack_pointer
@@ -311,10 +319,6 @@
     i32.add
     global.set $__stack_pointer
     local.get 1)
-  (func $_start (type 0)
-    call $dandelion_init
-    call $mat_mul
-    call $dandelion_exit)
   (func $dandelion_init (type 0)
     (local i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
     global.get $__stack_pointer
@@ -2709,13 +2713,14 @@
   (global (;8;) i32 (i32.const 1))
   (export "memory" (memory 0))
   (export "__wasm_call_ctors" (func $__wasm_call_ctors))
+  (export "_start" (func $_start))
+  (export "__dandelion_entry" (func $__dandelion_entry))
   (export "mat_mul" (func $mat_mul))
   (export "dandelion_input_set_count" (func $dandelion_input_set_count))
   (export "dandelion_input_buffer_count" (func $dandelion_input_buffer_count))
   (export "dandelion_get_input" (func $dandelion_get_input))
   (export "dandelion_alloc" (func $dandelion_alloc))
   (export "dandelion_add_output" (func $dandelion_add_output))
-  (export "_start" (func $_start))
   (export "dandelion_init" (func $dandelion_init))
   (export "dandelion_exit" (func $dandelion_exit))
   (export "__dandelion_system_init" (func $__dandelion_system_init))
