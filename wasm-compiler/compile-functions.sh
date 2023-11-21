@@ -1,15 +1,14 @@
 # Convenience script to compile a wasm function binary to a sandboxed native binary
-# To CROSS-compile to aarch64-unknown-linux-gnu, set the AARCH64_CROSS_COMPILE flag to 1
-# If not set, it will simply compile to the host architecture
+# To CROSS-compile to aarch64-unknown-linux-gnu, set the ARCH flag to "aarch64"
 
 # constants
 # the functions to compile
-FUNCTIONS="basic matmul matmac"
-BIN_DIR=binaries
+FUNCTIONS="basic matmul matmac busy"
+BIN_DIR=bin
 FUNCTION_SDK_HEAP_SIZE=2048     # in 64KB pages, = 128MB
 FUNCTION_WASM_MIN_HEAP_SIZE=2   # in pages
 DEBUG=0
-AARCH64_CROSS_COMPILE=0         # 0 (host) or "aarch64-unknown-linux-gnu"
+ARCH="aarch64"                   # "aarch64" or "x86_64"
 CLEAN_CARGO=0                   # 0 or 1
 DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data/"
 
@@ -17,7 +16,7 @@ FUNCTION_WASM_MEM_SIZE=$(($FUNCTION_WASM_MIN_HEAP_SIZE + $FUNCTION_SDK_HEAP_SIZE
 export FUNCTION_SDK_HEAP_SIZE
 export FUNCTION_WASM_MEM_SIZE
 
-# exit on error (doesn't do what I expected)
+# exit on error
 set -e
 
 if [ $DEBUG -eq 1 ]; then
@@ -29,15 +28,8 @@ for FUNC in $FUNCTIONS; do
     echo "\n>>>> COMPILING ${FUNC}\n"
     
     SRC=${BIN_DIR}/wasm/${FUNC}.wasm
-    RUST_BIN=$( 
-        if [ $AARCH64_CROSS_COMPILE = 1 ]; 
-        then    echo "sandboxed-function/target/aarch64-unknown-linux-gnu/release/libsandboxed_function.so";
-        else    echo "sandboxed-function/target/release/libsandboxed_function.so";
-        fi 
-    )
-    DST=${BIN_DIR}/${FUNC}$(
-        if [ $AARCH64_CROSS_COMPILE = 1 ]; then echo "-aarch64"; fi
-    )
+    RUST_BIN="sandboxed-function/target/${ARCH}-unknown-linux-gnu/release/libsandboxed_function.so"
+    DST=${BIN_DIR}/${ARCH}-${FUNC}
 
     # transpile with rWasm
     cd ./rWasm
@@ -50,21 +42,17 @@ for FUNC in $FUNCTIONS; do
     if [ $CLEAN_CARGO = 1 ]; then
         cargo clean
     fi
-    if [ $AARCH64_CROSS_COMPILE = 0 ]; 
-    then    cargo +nightly build --release
-    else    cargo +nightly build --release -Z build-std=core --target "aarch64-unknown-linux-gnu"
-    fi
+    
+    cargo +nightly build --release -Z build-std=core --target "${ARCH}-unknown-linux-gnu"
     cd ..
 
-    # copy binary to binaries/
+    # copy binary to bin/
     cp ${RUST_BIN} ${DST}
 
 
     # copy binary to DANDELION_TESTS_DIR
     if [ ! $DANDELION_TESTS_DIR = "" ]; then
-        cp ${DST} ${DANDELION_TESTS_DIR}/test_sysld_wasm_$(
-            if [ $AARCH64_CROSS_COMPILE = 1 ]; then echo "aarch64_"; fi
-        )${FUNC}
+        cp ${DST} ${DANDELION_TESTS_DIR}/test_sysld_wasm_${ARCH}_${FUNC}
     fi
 
     echo "\n<<<< DONE\n"

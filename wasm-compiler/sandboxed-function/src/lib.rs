@@ -1,10 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 
-// when compiling to a library, removes core's libc dependency
-// on memset, memcpy, etc.
-#[cfg(not(target_arch = "aarch64"))]
-extern crate compiler_builtins;
-
 /// This crate is a wrapper around the transpiled Rust code generated 
 /// by rWasm. It serves the following purposes:
 /// 
