@@ -9,8 +9,9 @@ BIN_DIR=binaries
 FUNCTION_SDK_HEAP_SIZE=2048     # in 64KB pages, = 128MB
 FUNCTION_WASM_MIN_HEAP_SIZE=2   # in pages
 DEBUG=0
-AARCH64_CROSS_COMPILE=1         # 0 (host) or "aarch64-unknown-linux-gnu"
+AARCH64_CROSS_COMPILE=0         # 0 (host) or "aarch64-unknown-linux-gnu"
 CLEAN_CARGO=0                   # 0 or 1
+DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data/"
 
 FUNCTION_WASM_MEM_SIZE=$(($FUNCTION_WASM_MIN_HEAP_SIZE + $FUNCTION_SDK_HEAP_SIZE))
 export FUNCTION_SDK_HEAP_SIZE
@@ -57,6 +58,14 @@ for FUNC in $FUNCTIONS; do
 
     # copy binary to binaries/
     cp ${RUST_BIN} ${DST}
+
+
+    # copy binary to DANDELION_TESTS_DIR
+    if [ ! $DANDELION_TESTS_DIR = "" ]; then
+        cp ${DST} ${DANDELION_TESTS_DIR}/test_sysld_wasm_$(
+            if [ $AARCH64_CROSS_COMPILE = 1 ]; then echo "aarch64_"; fi
+        )${FUNC}
+    fi
 
     echo "\n<<<< DONE\n"
 
