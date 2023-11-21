@@ -6,3 +6,6 @@
 	path = mlibc
 	url = git@github.com:eth-easl/mlibc.git
 	branch = dandelion
+[submodule "wasm-compiler/rWasm"]
+	path = wasm-compiler/rWasm
+	url = https://github.com/eth-easl/rWasm

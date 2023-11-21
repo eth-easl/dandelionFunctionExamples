@@ -1,2 +1,8 @@
 *.swp
 .vscode
+build
+target
+*.check_cache
+Cargo.lock
+bin
+*/dyn-loading-experiments

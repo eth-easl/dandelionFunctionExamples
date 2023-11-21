@@ -1,0 +1,20 @@
+[package]
+name = "sandboxed-function"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+name = "sandboxed_function"
+path = "src/lib.rs"
+
+[dependencies]
+sandbox-generated = { path = "../rWasm/generated" }
+macro-utils = { path = "./macro-utils" }
+libc = { version = "0.2.149", default-features = false }    # default features depend on std
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
