@@ -18,7 +18,7 @@ int busy() {
   if (set_size != 1) return -2;
 
   struct io_buffer* busy_buffer = dandelion_get_input(0, 0);
-  if (busy_buffer->data_len != 8) return -3;
+  if (busy_buffer->data_len < 8) return -3;
   uint64_t iterations = *(uint64_t*)busy_buffer->data;
 
   counter = 0;
@@ -26,11 +26,9 @@ int busy() {
   for (uint64_t iteration = 0; iteration < iterations; iteration++) {
     counter += ((iteration & 0x1) << 1);
   }
+  *((uint64_t*)busy_buffer->data) = counter;
 
-  struct io_buffer out_busy_buffer = {0};
-  out_busy_buffer.data = &counter;
-  out_busy_buffer.key = 0;
-  out_busy_buffer.data_len = sizeof(uint64_t);
+  struct io_buffer out_busy_buffer = *busy_buffer;
 
   dandelion_add_output(0, out_busy_buffer);
   return 0;
