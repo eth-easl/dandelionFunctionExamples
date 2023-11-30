@@ -16,20 +16,6 @@ else()
   message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_C_COMPILER_ID}")
 endif()
 
-# find compiler library (libgcc.a or libclang.a, ...) as that also needs to be linked in
-# execute_process(COMMAND ${CMAKE_C_COMPILER} -print-file-name=include OUTPUT_VARIABLE NATIVE_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
-# cmake_path(SET COMP_INCLUDE NORMALIZE ${NATIVE_INCLUDE})
-# foreach(LANG C CXX)
-# set(CMAKE_${LANG}_STANDARD_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
-# endforeach()
-
-# add_library(compiler_lib STATIC IMPORTED)
-# set_target_properties(compiler_lib PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${COMP_INCLUDE})
-# set_target_properties(compiler_lib PROPERTIES IMPORTED_LOCATION "${COMP_RTLIB}")
-# target_compile_options(compiler_lib INTERFACE -nostdinc)
-# target_link_options(compiler_lib INTERFACE -nostdlib -Wl)
-# target_link_options(compiler_lib INTERFACE -nostdlib -Wl --image-base=0)
-
 # prepare mlibc
 if(USE_LIBC)
   # make cross file
@@ -45,10 +31,6 @@ if(USE_LIBC)
   )
   ExternalProject_Get_Property(mlibc INSTALL_DIR)
   set(MLIBC_INSTALL_DIR ${INSTALL_DIR})
-
-  # mlibc can depend on compiler runtime library so that also needs to be linked
-  execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
-  cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
 
   add_library(dlibc OBJECT IMPORTED)
   add_dependencies(dlibc mlibc)
@@ -86,6 +68,9 @@ if("${DANDELION_PLATFORM}" STREQUAL "cheri")
 # WebAssembly flags
 elseif("${DANDELION_PLATFORM}" STREQUAL "wasm")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined")
+else()
+# currently still want to set the base image lower for all other images, if some don't want make special case
+  add_link_options(-fuse-ld=lld -Xlinker --image-base=0x10000)
 endif()
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../dandelionFunctionInterface" functionInterface)
