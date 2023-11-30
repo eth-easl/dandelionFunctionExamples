@@ -24,7 +24,7 @@ fi
 mkdir build
 cd build
 
-cmake -DCMAKE_C_COMPILER="$WASM_CLANG" -DDANDELION_PLATFORM=wasm ../functions
+cmake -DCMAKE_TOOLCHAIN_FILE="./dandelion.cmake" -DCMAKE_C_COMPILER="$WASM_CLANG" -DDANDELION_PLATFORM=wasm ../functions
 make
 
 cd ..
