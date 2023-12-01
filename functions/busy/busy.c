@@ -5,10 +5,8 @@
 // Project External Libraries
 
 // Project Internal Libraries
-#include "dandelion/runtime.h"
 #include "dandelion/crt.h"
-
-static uint64_t counter;
+#include "dandelion/runtime.h"
 
 int busy() {
   // check we get expected inputs
@@ -21,11 +19,26 @@ int busy() {
   if (busy_buffer->data_len < 8) return -3;
   uint64_t iterations = *(uint64_t*)busy_buffer->data;
 
-  counter = 0;
+  uint64_t counter = 0;
 
-  for (uint64_t iteration = 0; iteration < iterations; iteration++) {
-    counter += ((iteration & 0x1) << 1);
-  }
+#if defined(__x86_64__)
+  __asm__ volatile(
+      "1:\n"
+      "addq $1, %[counter]\n"
+      "cmp %[counter], %[iterations]\n"
+      "jg 1b\n"
+      : [counter] "+r"(counter)
+      : [iterations] "r"(iterations));
+
+#elif defined(__aarch64__)
+  __asm__ volatile(
+      "1:\n"
+      "add %[counter], %[counter], #1\n"
+      "cmp %[iterations], %[counter]\n"
+      "b.gt 1b\n"
+      : [counter] "+r"(counter)
+      : [iterations] "r"(iterations));
+#endif
   *((uint64_t*)busy_buffer->data) = counter;
 
   struct io_buffer out_busy_buffer = *busy_buffer;
