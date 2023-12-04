@@ -19,9 +19,8 @@ int busy() {
   if (busy_buffer->data_len < 8) return -3;
   uint64_t iterations = *(uint64_t*)busy_buffer->data;
 
-  uint64_t counter = 0;
-
 #if defined(__x86_64__)
+  uint64_t counter = 0;
   __asm__ volatile(
       "1:\n"
       "addq $1, %[counter]\n"
@@ -31,6 +30,7 @@ int busy() {
       : [iterations] "r"(iterations));
 
 #elif defined(__aarch64__)
+  uint64_t counter = 0;
   __asm__ volatile(
       "1:\n"
       "add %[counter], %[counter], #1\n"
@@ -38,7 +38,27 @@ int busy() {
       "b.gt 1b\n"
       : [counter] "+r"(counter)
       : [iterations] "r"(iterations));
+#elif defined(__wasm__)
+  volatile uint64_t counter = 0;
+  while (counter < iterations) {
+    counter += 1;
+  }
+  // __asm__ volatile(
+  //   "(loop\n"
+  //   "local.get $iterations\n"
+  //   "local.get $counter\n"
+  //   "i64.const 1\n"
+  //   "i64.add\n"
+  //   "local.tee $counter\n"
+  //   "i64.gt_u\n"
+  //   "br_if\n"
+  //   ")\n"
+  //   :[counter]"+r"(counter)
+  //   :[iterations] "r"(iterations));
+#else
+#error "Unimplemented architecture"
 #endif
+
   *((uint64_t*)busy_buffer->data) = counter;
 
   struct io_buffer out_busy_buffer = *busy_buffer;
