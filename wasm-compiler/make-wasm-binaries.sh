@@ -7,6 +7,8 @@
 # clang configuration for wasm
 export WASM_CLANG=/usr/bin/wasm32-clang
 
+DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data"
+
 # (currently unused) wasm-opt configuration, a wasm-to-wasm optimizer from binaryen
 # export WASM_OPT=~/projects/wasm/binaryen/bin/wasm-opt
 # export WASM_OPT_FLAGS="-O3"
@@ -52,10 +54,14 @@ done
 cd ../wasm-compiler/bin/wasm
 
 # for each wasm binary here, create a .wat file in the same location
-
 for d in ./*.wasm; do
   wasm2wat "$d" -o "${d%.wasm}.wat"
 done
 
-# move back to the directory of this script
-cd "$(dirname "$0")"
+# copy wasm binaries to Dandelion (without the .wasm extension)
+if [ ! $DANDELION_TESTS_DIR = "" ]; then
+  for d in ./*.wasm; do
+    filename=$(basename -- "$d")
+    cp "$d" "../../${DANDELION_TESTS_DIR}/test_wasm_${filename%.wasm}"
+  done
+fi
