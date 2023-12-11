@@ -1,8 +1,12 @@
  This directory contains
 
-- a build script to compile the std-less function examples to wasm
-- the rWasm-based compiler to transpile wasm binaries to Rust
-- a wrapper crate which turns the rWasm-generated code into a provably sandboxed native function binary
+- a UNIX shell script compiling the std-less function examples to `.wasm` binaries in `bin/wasm/` using
+    - clang and the cmake files
+- a UNIX shell script compiling the `.wasm` binaries to native binaries in `bin/` and precompiling wasmtime modules, using
+    - the rWasm-based compiler to transpile WASM binaries to Rust
+        - this will generate a Rust crate in `rWasm/generated`
+    - a wrapper crate which turns `rWasm/generated` into a provably sandboxed native binary
+    - a Rust crate `wasmtime-precompile` pre-compiling the `.wasm` binaries for wasmtime in `bin/wasmtime/`
 
 # wasm binaries build script
 
