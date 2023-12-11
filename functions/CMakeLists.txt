@@ -67,7 +67,7 @@ if("${DANDELION_PLATFORM}" STREQUAL "cheri")
   string(REPLACE ";" " " CROSS_LINK_OPTIONS "${CROSS_LINK_OPTIONS}")
 # WebAssembly flags
 elseif("${DANDELION_PLATFORM}" STREQUAL "wasm")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined -Wl,--import-memory")
 else()
 # currently still want to set the base image lower for all other images, if some don't want make special case
   add_link_options(-fuse-ld=lld -Xlinker --image-base=0x10000)
