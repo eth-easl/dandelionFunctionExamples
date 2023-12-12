@@ -1,6 +1,10 @@
 # Convenience script to compile a wasm function binary to a sandboxed native binary
 # To CROSS-compile to aarch64-unknown-linux-gnu, set the ARCH flag to "aarch64"
 
+# Note that the ARCH flag will not affect the wasmtime module pre-compilation. The
+# wasmtime modules can only be pre-compiled on the architecture where they will be
+# run.
+
 # constants
 # the functions to compile
 FUNCTIONS="basic matmul matmac busy"
@@ -62,7 +66,7 @@ for FUNC in $FUNCTIONS; do
     # copy binaries to DANDELION_TESTS_DIR
 
     if [ ! $DANDELION_TESTS_DIR = "" ]; then
-        cp ${DST} ${DANDELION_TESTS_DIR}/test_wasmtime_${FUNC}
+        cp ${DST} ${DANDELION_TESTS_DIR}/test_wasmtime_${ARCH}_${FUNC}
     fi
 
     echo "\n<<<< DONE\n"
