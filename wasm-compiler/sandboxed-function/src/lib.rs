@@ -17,14 +17,29 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-// use interface::_32_bit::DandelionSystemData;
+mod interface;
+use interface::_32_bit::DandelionSystemData;
 use sandbox_generated::WasmModule;
 
 #[no_mangle]
 #[allow(unused)]
-pub fn run(wasm_mem: &mut [u8]) -> Option<i32> {
+pub fn run(wasm_mem: &mut [u8], sysdata_offset: usize) -> Option<i32> {
 
+    // copy the system data
+    const SYS_DATA_SIZE: usize = core::mem::size_of::<DandelionSystemData>();
+    let mut sysdata_buffer = [0u8; SYS_DATA_SIZE];
+    sysdata_buffer.copy_from_slice(
+        &wasm_mem[sysdata_offset..sysdata_offset + SYS_DATA_SIZE]
+    );
+
+    // initialize the wasm module
     let mut instance = WasmModule::new(wasm_mem);
+
+    // write the system data again
+    instance.memory[sysdata_offset..sysdata_offset + SYS_DATA_SIZE]
+        .copy_from_slice(&sysdata_buffer);
+
+    // call entry
     let ret = instance._start();
     
     if ret.is_none() { 
