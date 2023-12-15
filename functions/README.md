@@ -17,3 +17,6 @@ cmake -DCMAKE_TOOLCHAIN_FILE=dandelion.cmake -DDANDELION_PLATFORM=<platform> -DT
 ```
 The mlibc build currently only seems to work with clang.
 To set this up set CC=clang and CXX=clang++ additionally set LDFLAGS=-fuse-ld=lld
+
+## Building dlibc
+To turn on building of libc enable the cmake option with `-DUSE_LIBC=on`
