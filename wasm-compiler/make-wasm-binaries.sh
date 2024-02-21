@@ -16,6 +16,9 @@ DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data"
 # print everything
 set -x
 
+# create necessary bin directories
+mkdir -p ${BIN_DIR}/wasm
+
 # build wasm functions
 
 cd "$(dirname "$0")/.."
