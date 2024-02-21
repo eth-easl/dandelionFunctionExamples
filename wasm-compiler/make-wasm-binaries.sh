@@ -7,6 +7,7 @@
 # clang configuration for wasm
 export WASM_CLANG=/usr/bin/wasm32-clang
 
+BIN_DIR=bin
 DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data"
 
 # (currently unused) wasm-opt configuration, a wasm-to-wasm optimizer from binaryen
