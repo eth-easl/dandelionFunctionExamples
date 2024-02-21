@@ -5,7 +5,10 @@
 # installed somewhere else, change the WASM_CLANG variable below.
 
 # clang configuration for wasm
-export WASM_CLANG=/usr/bin/wasm32-clang
+#export WASM_CLANG=/usr/bin/clang-17
+
+BIN_DIR=bin
+DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data"
 
 # (currently unused) wasm-opt configuration, a wasm-to-wasm optimizer from binaryen
 # export WASM_OPT=~/projects/wasm/binaryen/bin/wasm-opt
@@ -13,6 +16,9 @@ export WASM_CLANG=/usr/bin/wasm32-clang
 
 # print everything
 set -x
+
+# create necessary bin directories
+mkdir -p ${BIN_DIR}/wasm
 
 # build wasm functions
 
@@ -24,23 +30,11 @@ fi
 mkdir build
 cd build
 
-cmake -DCMAKE_C_COMPILER="$WASM_CLANG" -DDANDELION_PLATFORM=wasm ../functions
+cmake -DCMAKE_TOOLCHAIN_FILE="./dandelion.cmake" -DCMAKE_C_COMPILER="$WASM_CLANG" -DDANDELION_PLATFORM=wasm ../functions
 make
 
-cd ..
-
 # copy wasm binaries to wasm-compiler/bin/wasm
-
-cd wasm-compiler/bin
-
-if [ -d "wasm" ]; then
-  rm -rf ./wasm
-fi
-
-mkdir wasm
-
-cd ../../build/
-
+mkdir -p ../wasm-compiler/bin/wasm
 for d in ./*; do
   if [ -d "$d" ]; then
     if [ "$d" != "./CMakeFiles" ] && [ "$d" != "./functionInterface" ]; then
@@ -52,10 +46,14 @@ done
 cd ../wasm-compiler/bin/wasm
 
 # for each wasm binary here, create a .wat file in the same location
-
 for d in ./*.wasm; do
   wasm2wat "$d" -o "${d%.wasm}.wat"
 done
 
-# move back to the directory of this script
-cd "$(dirname "$0")"
+# copy wasm binaries to Dandelion (without the .wasm extension)
+if [ ! $DANDELION_TESTS_DIR = "" ]; then
+  for d in ./*.wasm; do
+    filename=$(basename -- "$d")
+    cp "$d" "../../${DANDELION_TESTS_DIR}/test_wasm_${filename%.wasm}"
+  done
+fi

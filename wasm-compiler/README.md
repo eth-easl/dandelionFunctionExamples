@@ -1,14 +1,25 @@
  This directory contains
 
-- a build script to compile the std-less function examples to wasm
-- the rWasm-based compiler to transpile wasm binaries to Rust
-- a wrapper crate which turns the rWasm-generated code into a provably sandboxed native function binary
+- a UNIX shell script compiling the std-less function examples to `.wasm` binaries in `bin/wasm/` using
+    - clang and the cmake files
+- a UNIX shell script compiling the `.wasm` binaries to native binaries in `bin/` and precompiling wasmtime modules, using
+    - the rWasm-based compiler to transpile WASM binaries to Rust
+        - this will generate a Rust crate in `rWasm/generated`
+    - a wrapper crate which turns `rWasm/generated` into a provably sandboxed native binary
+    - a Rust crate `wasmtime-precompile` pre-compiling the `.wasm` binaries for wasmtime in `bin/wasmtime/`
+
+
+Requires the following to be installed:
+- rustfmt
 
 # wasm binaries build script
 
 ```bash
 ./make-wasm-binaries.sh
 ```
+
+NOTE: is only tested with clang-17 and needs WASM_CLANG=wasm-clang exported (also worked with CC=clang-17 in the past and CXX=clang++-17)
+also might need to be pointed at llvm-ar and llvm-ranlib instead of system ar and ranlib
 
 - makes the function examples against the Dandelion SDK targeting `wasm32` in clang, and Dandelion platform `wasm`
 - generates .wasm binaries and stores them in `binaries/wasm`
@@ -40,9 +51,9 @@ aarch64 cross-compilation prerequisites:
     ```bash
     sudo apt-get install gcc-aarch64-linux-gnu
     ```
-- add `./sandboxed-function/.cargo/config.toml`
+<!-- - add `./sandboxed-function/.cargo/config.toml`
     
     ```bash
     [target.aarch64-unknown-linux-gnu]
     linker = "aarch64-linux-gnu-gcc"
-    ```
+    ``` -->
