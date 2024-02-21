@@ -31,26 +31,10 @@ mkdir build
 cd build
 
 cmake -DCMAKE_TOOLCHAIN_FILE="./dandelion.cmake" -DCMAKE_C_COMPILER="$WASM_CLANG" -DDANDELION_PLATFORM=wasm ../functions
-# cmake -DDANDELION_PLATFORM=wasm ../functions
 make
 
-cd ..
-
 # copy wasm binaries to wasm-compiler/bin/wasm
-if [ -d "wasm-compiler/bin" ]; then
-  rm -rf wasm-compiler/bin
-fi
-mkdir -p wasm-compiler/bin
-cd wasm-compiler/bin
-
-if [ -d "wasm" ]; then
-  rm -rf ./wasm
-fi
-
-mkdir wasm
-
-cd ../../build/
-
+mkdir -p ../wasm-compiler/bin/wasm
 for d in ./*; do
   if [ -d "$d" ]; then
     if [ "$d" != "./CMakeFiles" ] && [ "$d" != "./functionInterface" ]; then
