@@ -47,9 +47,9 @@ aarch64 cross-compilation prerequisites:
     ```bash
     sudo apt-get install gcc-aarch64-linux-gnu
     ```
-- add `./sandboxed-function/.cargo/config.toml`
+<!-- - add `./sandboxed-function/.cargo/config.toml`
     
     ```bash
     [target.aarch64-unknown-linux-gnu]
     linker = "aarch64-linux-gnu-gcc"
-    ```
+    ``` -->

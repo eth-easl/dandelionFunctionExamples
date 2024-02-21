@@ -28,6 +28,10 @@ if [ $DEBUG -eq 1 ]; then
     set -x
 fi
 
+# create necessary bin directories
+mkdir -p ${BIN_DIR}/rWasm-sandboxed
+mkdir -p ${BIN_DIR}/wasmtime
+
 for FUNC in $FUNCTIONS; do
     echo "\n>>>> COMPILING ${FUNC}\n"
     SRC=${BIN_DIR}/wasm/${FUNC}.wasm

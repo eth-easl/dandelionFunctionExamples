@@ -7,6 +7,7 @@
 # clang configuration for wasm
 #export WASM_CLANG=/usr/bin/clang-17
 
+BIN_DIR=bin
 DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data"
 
 # (currently unused) wasm-opt configuration, a wasm-to-wasm optimizer from binaryen
@@ -15,6 +16,9 @@ DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data"
 
 # print everything
 set -x
+
+# create necessary bin directories
+mkdir -p ${BIN_DIR}/wasm
 
 # build wasm functions
 
