@@ -8,6 +8,10 @@
     - a wrapper crate which turns `rWasm/generated` into a provably sandboxed native binary
     - a Rust crate `wasmtime-precompile` pre-compiling the `.wasm` binaries for wasmtime in `bin/wasmtime/`
 
+
+Requires the following to be installed:
+- rustfmt
+
 # wasm binaries build script
 
 ```bash
