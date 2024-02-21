@@ -12,7 +12,7 @@ BIN_DIR=bin
 FUNCTION_SDK_HEAP_SIZE=2048     # in 64KB pages, = 128MB
 FUNCTION_WASM_MIN_HEAP_SIZE=2   # in pages
 DEBUG=0
-ARCH="aarch64"                  # "aarch64" or "x86_64"
+ARCH="x86_64"                   # "aarch64" or "x86_64"
 CLEAN_CARGO=0                   # 0 or 1
 DANDELION_TESTS_DIR="../../dandelion/machine_interface/tests/data/"
 

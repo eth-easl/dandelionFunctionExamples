@@ -14,6 +14,9 @@
 ./make-wasm-binaries.sh
 ```
 
+NOTE: is only tested with clang-17 and needs WASM_CLANG=wasm-clang exported (also worked with CC=clang-17 in the past and CXX=clang++-17)
+also might need to be pointed at llvm-ar and llvm-ranlib instead of system ar and ranlib
+
 - makes the function examples against the Dandelion SDK targeting `wasm32` in clang, and Dandelion platform `wasm`
 - generates .wasm binaries and stores them in `binaries/wasm`
 - adds .wat files to `bin/wasm` for human-readable versions of the .wasm binaries
