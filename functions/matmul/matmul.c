@@ -30,10 +30,11 @@ int mat_mul() {
 
   for (int i = 0; i < mat_rows; i++) {
     for (int j = 0; j < mat_rows; j++) {
+      int64_t temp = 0;
       for (int k = 0; k < mat_cols; k++) {
-        out_mat[i * mat_rows + j] +=
-            in_mat[i * mat_cols + k] * in_mat[j * mat_cols + k];
+         temp += in_mat[i * mat_cols + k] * in_mat[j * mat_cols + k];
       }
+      out_mat[i * mat_rows + j] = temp;
     }
   }
 

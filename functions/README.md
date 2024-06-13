@@ -13,7 +13,7 @@ From the top folder functions can be built with:
 ```
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=dandelion.cmake -DDANDELION_PLATFORM=<platform> -DTARGET_CPU=<target arch> ../functions
+cmake -DCMAKE_TOOLCHAIN_FILE=../functions/dandelion.cmake -DDANDELION_PLATFORM=<platform> -DTARGET_CPU=<target arch> ../functions
 ```
 The mlibc build currently only seems to work with clang.
 To set this up set CC=clang and CXX=clang++ additionally set LDFLAGS=-fuse-ld=lld
