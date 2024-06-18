@@ -21,10 +21,14 @@ int main(int argc, char const *argv[]) {
   }
   char* function = NULL;
   size_t function_size = 0;
-  if(getdelim(&function, &function_size, ',', input_data) < 0) {
+  ssize_t string_len = 0;
+  if((string_len = getdelim(&function, &function_size, ',', input_data) < 0)) {
     perror("failed to read function");
     return -1;
   }
+  // remove ',' from end
+  function[string_len-1] = 0;
+
   char* requestedCpu = NULL;
   size_t requestedCpu_size = 0;
   if(getdelim(&requestedCpu, &requestedCpu_size, ',', input_data) < 0) {
