@@ -81,6 +81,7 @@ add_subdirectory(basic)
 add_subdirectory(busy)
 add_subdirectory(matmac)
 add_subdirectory(matmul)
+add_subdirectory(example_app_nolibc)
 # dependent on dlibc
 if(USE_LIBC)
   # add_subdirectory(image_processing)
