@@ -16,6 +16,10 @@ else()
   message(FATAL_ERROR "Compiler not clang\n" "${CMAKE_C_COMPILER_ID}")
 endif()
 
+# mlibc can depend on compiler runtime library so that also needs to be linked
+execute_process(COMMAND ${CMAKE_C_COMPILER} -print-libgcc-file-name OUTPUT_VARIABLE NATIVE_RTLIB OUTPUT_STRIP_TRAILING_WHITESPACE)
+cmake_path(SET COMP_RTLIB NORMALIZE ${NATIVE_RTLIB})
+
 # prepare mlibc
 if(USE_LIBC)
   # make cross file
