@@ -38,8 +38,8 @@ jobs:
           ${{ secrets.DANDELION_EXAMPLES_READ_SECRET }}
 
     - run: |
-      git submodule sync --recursive
-      git -c protocol.version=2 submodule update --init --force --depth=1 --recursive 
+        git submodule sync --recursive
+        git -c protocol.version=2 submodule update --init --force --depth=1 --recursive 
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
