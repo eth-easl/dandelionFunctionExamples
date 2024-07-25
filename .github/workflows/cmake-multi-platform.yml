@@ -24,12 +24,20 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         cpu: ["aarch64", "x86_64"]
-        platform: ["cheri", "mmu_linux", "mmu_freebsd"]
+        platform: ["mmu_linux", "mmu_freebsd"]
 
     steps:
     - uses: actions/checkout@v3
       with:
-        submodules: recursive
+        persist-credentials: false
+    - uses webfactory/ssh-agent@v0.9.0
+      with: 
+        ssh-private-key: |
+          ${{ secrets.DANDELION_READ_SECRET }}
+          ${{ secrets.DANDELION_EXAMPLES_READ_SECRET }}
+    - run: |
+      git submodule sync --recursive
+      git -c protocol.version=2 submodule update --init --force --depth=1 --recursive 
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
