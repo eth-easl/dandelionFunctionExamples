@@ -2,7 +2,7 @@ set(CMAKE_VERSION 3.20)
 cmake_minimum_required(VERSION ${CMAKE_VERSION})
 
 # option to include libc-dependent examples
-option(USE_LIBC "Use libc" OFF)
+option(USE_LIBC "Use libc" ON)
 
 # prevent in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -89,4 +89,5 @@ if(USE_LIBC)
   add_subdirectory(example_app)
   add_subdirectory(files)
   add_subdirectory(stdio)
+  add_subdirectory(example_app_hybrid)
 endif()
