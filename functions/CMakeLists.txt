@@ -38,7 +38,7 @@ message(WARNING "${COMPILER_RUNTIME_INCLUDE}")
 
 add_library(dandelion_runtime INTERFACE IMPORTED)
 target_include_directories(dandelion_runtime INTERFACE
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/include/dandelion"
+  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/include"
 )
 target_compile_options(dandelion_runtime INTERFACE -nostdinc -idirafter${COMPILER_RUNTIME_INCLUDE})
 target_link_libraries(dandelion_runtime INTERFACE

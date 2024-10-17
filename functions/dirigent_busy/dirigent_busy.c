@@ -24,7 +24,7 @@ int main(int argc, char const *argv[]) {
  
     char *workload = NULL;
     size_t workload_size = 0;
-    if (getdelim(&workload, &workload_size, ',', input_data) < 0) {
+    if (__getdelim(&workload, &workload_size, ',', input_data) < 0) {
         perror("failed to read workload");
         return -1;
     }
@@ -32,7 +32,7 @@ int main(int argc, char const *argv[]) {
 
     char *function = NULL;
     size_t function_size = 0;
-    if (getdelim(&function, &function_size, ',', input_data) < 0) {
+    if (__getdelim(&function, &function_size, ',', input_data) < 0) {
         perror("failed to read function");
         return -1;
     }
@@ -40,7 +40,7 @@ int main(int argc, char const *argv[]) {
 
     char *requestedCpu = NULL;
     size_t requestedCpu_size = 0;
-    if (getdelim(&requestedCpu, &requestedCpu_size, ',', input_data) < 0) {
+    if (__getdelim(&requestedCpu, &requestedCpu_size, ',', input_data) < 0) {
         perror("failed to read requestedCpu");
         return -1;
     }
@@ -48,7 +48,7 @@ int main(int argc, char const *argv[]) {
 
     char *multiplier = NULL;
     size_t multiplier_size = 0;
-    if (getdelim(&multiplier, &multiplier_size, ',', input_data) < 0) {
+    if (__getdelim(&multiplier, &multiplier_size, ',', input_data) < 0) {
         perror("failed to read multiplier");
         return -1;
     }
