@@ -39,8 +39,8 @@ int busy() {
   size_t preamble_set_size = dandelion_input_buffer_count(1);
   if (preamble_set_size != 1) return -3;
 
-  struct io_buffer* data_buffer = dandelion_get_input(0, 0);
-  struct io_buffer* preamble_buffer = dandelion_get_input(1, 0);
+  IoBuffer* data_buffer = dandelion_get_input(0, 0);
+  IoBuffer* preamble_buffer = dandelion_get_input(1, 0);
 
   // start reading the http response that is the input
   char* data = (char*) data_buffer->data;
@@ -54,6 +54,7 @@ int busy() {
   size_t output_len = data_len + preamble_len;
   char* output_buffer = dandelion_alloc(output_len, 64);
   local_memcpy(output_buffer, preamble_buffer->data, preamble_len);
+  // not copying the input data buffer fully, so the runtime is actually decoupled from the input since
 
 #if defined(__x86_64__)
   uint64_t counter = 0;
@@ -86,7 +87,7 @@ int busy() {
   *((uint64_t*)(output_buffer + preamble_len)) = counter;
 
   // keep ident and key from data buffer
-  struct io_buffer request_buffer = *data_buffer;
+  IoBuffer request_buffer = *data_buffer;
   request_buffer.data = output_buffer;
   request_buffer.data_len = output_len;
 

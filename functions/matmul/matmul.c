@@ -5,26 +5,29 @@
 // Project External Libraries
 
 // Project Internal Libraries
-#include "dandelion/runtime.h"
 #include "dandelion/crt.h"
+#include "dandelion/runtime.h"
 
 int mat_mul() {
   // check we get expected inputs
   size_t input_set_count = dandelion_input_set_count();
-  if (input_set_count != 1) return -1;
+  if (input_set_count != 1)
+    return -1;
   size_t mat_set_size = dandelion_input_buffer_count(0);
-  if (mat_set_size != 1) return -2;
+  if (mat_set_size != 1)
+    return -2;
 
-  struct io_buffer* mat_buffer = dandelion_get_input(0, 0);
-  if (mat_buffer->data_len < 8) return -3;
-  int64_t mat_rows = *(int64_t*)mat_buffer->data;
+  IoBuffer *mat_buffer = dandelion_get_input(0, 0);
+  if (mat_buffer->data_len < 8)
+    return -3;
+  int64_t mat_rows = *(int64_t *)mat_buffer->data;
   size_t mat_size = mat_buffer->data_len - 8;
   if (mat_size < 8 || mat_size % 8 != 0 || (mat_size / 8) % mat_rows != 0)
     return -4;
   int64_t mat_cols = (mat_size / 8) / mat_rows;
 
-  int64_t* in_mat = (int64_t*)mat_buffer->data + 1;
-  int64_t* out_mat = dandelion_alloc(mat_rows * mat_rows * 8 + 8, 8);
+  int64_t *in_mat = (int64_t *)mat_buffer->data + 1;
+  int64_t *out_mat = dandelion_alloc(mat_rows * mat_rows * 8 + 8, 8);
   out_mat[0] = mat_rows;
   out_mat++;
 
@@ -32,13 +35,13 @@ int mat_mul() {
     for (int j = 0; j < mat_rows; j++) {
       int64_t temp = 0;
       for (int k = 0; k < mat_cols; k++) {
-         temp += in_mat[i * mat_cols + k] * in_mat[j * mat_cols + k];
+        temp += in_mat[i * mat_cols + k] * in_mat[j * mat_cols + k];
       }
       out_mat[i * mat_rows + j] = temp;
     }
   }
 
-  struct io_buffer out_mat_buffer = {0};
+  IoBuffer out_mat_buffer = {0};
   out_mat_buffer.data = out_mat - 1;
   out_mat_buffer.key = mat_buffer->key;
   out_mat_buffer.data_len = mat_rows * mat_rows * 8 + 8;

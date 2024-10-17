@@ -2,24 +2,26 @@
 
 int main() {
   // make sure we have the expected output sets
-  if (dandelion_output_set_count() < 1) return -1;
+  if (dandelion_output_set_count() < 1)
+    return -1;
 
   // read authorization server file
-  if (dandelion_input_set_count() < 2) errprint("have less than 1 input set");
+  if (dandelion_input_set_count() < 2)
+    errprint("have less than 1 input set");
   if (dandelion_input_buffer_count(0) != 1)
     errprint("have no buffer in input set 0");
   if (dandelion_input_buffer_count(1) != 1)
     errprint("have no buffer in input set 1");
 
-  struct io_buffer* server_file = dandelion_get_input(0, 0);
-  char* server_data = server_file->data;
+  IoBuffer *server_file = dandelion_get_input(0, 0);
+  char *server_data = server_file->data;
   size_t server_len = server_file->data_len;
 
-  struct io_buffer* auth_file = dandelion_get_input(1, 0);
-  char* auth_data = auth_file->data;
+  IoBuffer *auth_file = dandelion_get_input(1, 0);
+  char *auth_data = auth_file->data;
   size_t auth_len = auth_file->data_len;
 
-  char* request_buffer = dandelion_alloc(2048, 8);
+  char *request_buffer = dandelion_alloc(2048, 8);
   size_t request_index = 0;
   char post_prefix[] = "POST http://";
   request_index += string_copy(request_buffer + request_index, post_prefix);
@@ -59,7 +61,7 @@ int main() {
   char json_suffix[] = "\"}";
   request_index += string_copy(request_buffer + request_index, json_suffix);
 
-  struct io_buffer request = {
+  IoBuffer request = {
       .ident = "auth",
       .ident_len = 4,
       .data = request_buffer,

@@ -40,9 +40,18 @@ int copy_folder(char *in_parent, char *out_parent) {
       char *new_out = new_path(out_parent, name_buf);
       char *new_in = new_path(in_parent, entry->d_name);
       if (entry->d_type == DT_DIR) {
-        if (mkdir(new_out, 0x777) < 0) {
-          perror("Failed to create new directory");
+        // check if folder exists
+        DIR* out_parent = opendir(new_out);
+        if(out_parent == NULL && errno == ENOENT){
+          if (mkdir(new_out, 0x777) < 0) {
+            perror("Failed to create new directory");
+            return -1;
+          }
+        } else if(out_parent == NULL) {
+          perror("Failed check for existing directory");
           return -1;
+        } else {
+          closedir(out_parent);
         }
 
         if (copy_folder(new_in, new_out) < 0) {

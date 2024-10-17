@@ -6,10 +6,9 @@ add_executable(${EXECUTABLE}
   dirigent_busy.c
 )
 
-add_dependencies(${EXECUTABLE} dlibc)
-
 target_compile_options(${EXECUTABLE} PRIVATE -static -O3)
 target_link_options(${EXECUTABLE} PRIVATE -static)
 target_link_libraries(${EXECUTABLE} PRIVATE
   dlibc
+  dandelion_runtime
 )
