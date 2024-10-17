@@ -7,12 +7,16 @@ include(FetchContent)
 
 # option to include libc-dependent examples
 <<<<<<< HEAD
+<<<<<<< HEAD
 set(ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR} CACHE STRING "the architecture to build for")
 set(PLATFORM "debug" CACHE STRING "backend to build for")
 message(STATUS "Building for ${PLATFORM} on ${ARCHITECTURE}")
 =======
 option(USE_LIBC "Use libc" ON)
 >>>>>>> dbb2ea9 (Implemented middleware app as a hybrid function (mix compute and i/o))
+=======
+option(USE_LIBC "Use libc" ON)
+>>>>>>> dbb2ea9070b8923a6dbfa8d43bd5446c256966ad
 
 # prevent in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -101,19 +105,9 @@ add_subdirectory(matmul)
 add_subdirectory(example_app_nolibc)
 
 # dependent on dlibc
-<<<<<<< HEAD
 add_subdirectory(dirigent_busy)
 add_subdirectory(example_app)
 add_subdirectory(files)
 add_subdirectory(stdio)
 add_subdirectory(stdio_cxx)
-=======
-if(USE_LIBC)
-  # add_subdirectory(image_processing)
-  add_subdirectory(dirigent_busy)
-  add_subdirectory(example_app)
-  add_subdirectory(files)
-  add_subdirectory(stdio)
-  add_subdirectory(example_app_hybrid)
-endif()
->>>>>>> dbb2ea9 (Implemented middleware app as a hybrid function (mix compute and i/o))
+add_subdirectory(example_app_hybrid)
