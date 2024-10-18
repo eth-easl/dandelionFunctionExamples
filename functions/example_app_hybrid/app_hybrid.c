@@ -5,11 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/socket.h>
-
 #include "unistd.h"
+
+#include "syscall.h"
 
 #define BUFFER_SIZE 4096
 #define SERVER_NUMBER 10
@@ -40,17 +38,17 @@ int connect_to_server(const char *hostname, int port) {
         return -1;
     }
 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    int sockfd = linux_socket(LINUX_AF_INET, LINUX_SOCK_STREAM, 0);
     if (sockfd < 0) {
         perror("Socket creation failed");
         return -1;
     }
 
-    server_addr.sin_family = AF_INET;
+    server_addr.sin_family = LINUX_AF_INET;
     server_addr.sin_port = htons(port);
     memcpy(&server_addr.sin_addr.s_addr, host->h_addr_list[0], host->h_length);
 
-    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    if (linux_connect(sockfd, &server_addr, sizeof(server_addr)) < 0) {
         perror("Socket connection failed");
         close(sockfd);
         return -1;
@@ -61,13 +59,13 @@ int connect_to_server(const char *hostname, int port) {
 
 
 int send_http_request(int sockfd, const char *request, char *response, size_t response_size) {
-    if (send(sockfd, request, strlen(request), 0) < 0) {
+    if (linux_send(sockfd, request, strlen(request), 0) < 0) {
         perror("Send failed");
         return -1;
     }
 
     ssize_t total_received = 0, bytes;
-    while ((bytes = recv(sockfd, response + total_received, response_size - total_received - 1, 0)) > 0) {
+    while ((bytes = linux_recv(sockfd, response + total_received, response_size - total_received - 1, 0)) > 0) {
         total_received += bytes;
         if (total_received >= response_size - 1) break;
     }
