@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h> 
 #include <string.h>
 #include <sys/stat.h>
 #include "unistd.h"
@@ -30,13 +31,20 @@ char event_template[] =
 "\"timestamp\":\"%100[^\"]"
 "}";
 
-int connect_to_server(const char *hostname, int port) {
+
+unsigned short my_htons(unsigned short port) {
+    return (port >> 8) | (port << 8);
+}
+
+int my_inet_pton(const char *src, uint32_t *dst) {
+    unsigned int b1, b2, b3, b4;
+    if (sscanf(src, "%u.%u.%u.%u", &b1, &b2, &b3, &b4) != 4) return 0;
+    *dst = (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+    return 1;
+}
+
+int connect_to_server(const char *ip, int port) {
     struct sockaddr_in server_addr;
-    struct hostent *host = gethostbyname(hostname);
-    if (!host) {
-        perror("Failed to resolve hostname");
-        return -1;
-    }
 
     int sockfd = linux_socket(LINUX_AF_INET, LINUX_SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -45,8 +53,9 @@ int connect_to_server(const char *hostname, int port) {
     }
 
     server_addr.sin_family = LINUX_AF_INET;
-    server_addr.sin_port = htons(port);
-    memcpy(&server_addr.sin_addr.s_addr, host->h_addr_list[0], host->h_length);
+    server_addr.sin_port = my_htons(port);
+
+    my_inet_pton(ip, &server_addr.sin_addr.s_addr); 
 
     if (linux_connect(sockfd, &server_addr, sizeof(server_addr)) < 0) {
         perror("Socket connection failed");
@@ -152,17 +161,12 @@ void render_logs_to_html(log_node *log_root) {
 
 // Main function to handle authorization, log fetching, and rendering
 int main() {
-    // Get the authorization server address from the environment variable
-    const char *auth_server = getenv("STORAGE_HOST");
-    if (!auth_server) {
-        fprintf(stderr, "Storage host must be provided with environment variable STORAGE_HOST\n");
-        return 1;
-    }
-
+    
+    const char *auth_server_ip = "10.233.0.12";
     const char *auth_token = "fapw84ypf3984viuhsvpoi843ypoghvejkfld";
 
     // handle
-    int auth_sock = connect_to_server(auth_server, AUTH_SERVER_PORT);
+    int auth_sock = connect_to_server(auth_server_ip, AUTH_SERVER_PORT);
     if (auth_sock < 0) return 1;
 
     char auth_request[BUFFER_SIZE];
@@ -171,7 +175,7 @@ int main() {
              "Host: %s\r\n"
              "Content-Type: application/json\r\n"
              "Content-Length: %zu\r\n\r\n"
-             "{\"token\": \"%s\"}", auth_server, strlen(auth_token) + 12, auth_token);
+             "{\"token\": \"%s\"}", auth_server_ip, strlen(auth_token) + 12, auth_token);
 
     char auth_response[BUFFER_SIZE];
     if (send_http_request(auth_sock, auth_request, auth_response, BUFFER_SIZE) < 0) {
@@ -189,13 +193,13 @@ int main() {
     char log_response[BUFFER_SIZE];
 
     for (int i = 0; i < SERVER_NUMBER; ++i) {
-        int log_sock = connect_to_server(auth_server, AUTH_SERVER_PORT);
+        int log_sock = connect_to_server(auth_server_ip, AUTH_SERVER_PORT);
         if (log_sock < 0) continue;
 
         snprintf(log_request, sizeof(log_request),
                  "GET /logs/%d HTTP/1.1\r\n"
                  "Host: %s\r\n"
-                 "Authorization: Bearer %s\r\n\r\n", i, auth_server, token);
+                 "Authorization: Bearer %s\r\n\r\n", i, auth_server_ip, token);
 
         if (send_http_request(log_sock, log_request, log_response, BUFFER_SIZE) == 0) {
             parse_log_events(log_response, &log_root);
