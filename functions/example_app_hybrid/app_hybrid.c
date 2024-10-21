@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE 4096
 #define SERVER_NUMBER 10
-const uint16_t AUTH_SERVER_PORT = 8080;
+const uint16_t AUTH_SERVER_PORT = 8000;
 
 // Structure to store log event details
 typedef struct log_node {
@@ -24,12 +24,12 @@ typedef struct log_node {
 } log_node;
 
 char event_template[] = 
-"%*[^{]"
-"\"details\":\"%100[^\"],"
-"\"event_type\":\"%100[^\"],"
-"\"server_id\":\"%100[^\"],"
-"\"timestamp\":\"%100[^\"]"
-"}";
+"%*[^{]{"
+"\"details\":\"%100[^\"]\","
+"\"event_type\":\"%100[^\"]\","
+"\"server_id\":\"%100[^\"]\","
+"\"timestamp\":\"%100[^\"]\""
+"%}";
 
 
 uint16_t my_htons(uint16_t port) {
@@ -79,18 +79,14 @@ int connect_to_server(const char *ip, uint16_t port) {
         return -1;
     }
 
-    printf("s_addr: 0x%08X\n", server_addr.sin_addr.s_addr);
-
-    int err = linux_connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    int err = linux_connect(sockfd, &server_addr, sizeof(server_addr));
     if (err < 0) {
-        printf("Error: %d\n", err);
+        printf("Error: %s\n", strerror(-err));
         printf("size of server_addr: %ld\n", sizeof(server_addr));
         perror("Socket connection failed");
         close(sockfd);
         return -1;
     }
-
-    printf("Socket connected\n");
 
     return sockfd;
 }
@@ -103,12 +99,17 @@ int send_http_request(int sockfd, const char *request, char *response, size_t re
     }
 
     ssize_t total_received = 0, bytes;
-    while ((bytes = linux_recv(sockfd, response + total_received, response_size - total_received - 1, 0)) > 0) {
-        total_received += bytes;
-        if (total_received >= response_size - 1) break;
+    // while ((bytes = linux_recv(sockfd, response + total_received, response_size - total_received - 1, 0)) > 0) {
+    //     total_received += bytes;
+    //     if (total_received >= response_size - 1) break;
+    // }
+    // blocks and waits forever if there is no next packate, could validate HTTP sice on the packages to see if we need more, this works for now
+    total_received = linux_recv(sockfd, response + total_received, response_size - total_received - 1, 0);
+    if(total_received < 0){
+        return -1;
     }
     response[total_received] = '\0';
-    return total_received > 0 ? 0 : -1;
+    return 0;
 }
 
 
@@ -124,15 +125,16 @@ void parse_log_events(const char *response, log_node **log_root) {
 
     const char *start = strstr(response, "\"events\":");
     if (start) {
-        start += 10;
+        start += 9;
         while (1) {
             current = malloc(sizeof(log_node));
-            if (sscanf(start, 
+            int found = sscanf(start, 
                        event_template, 
-                       current->timestamp, 
-                       current->server_id, 
+                       current->details,
                        current->type, 
-                       current->details) != 4) {
+                       current->server_id, 
+                       current->timestamp); 
+            if (found != 4) {
                 free(current);
                 break;
             }
@@ -142,18 +144,42 @@ void parse_log_events(const char *response, log_node **log_root) {
 
             start = strstr(start, "},{");
             if (!start) break;
-            start += 3;
+            start += 1;
         }
     }
 }
 
 // Render logs to an HTML file
 void render_logs_to_html(log_node *log_root) {
-    FILE *log_file = fopen("log.html", "w+");
+    FILE *log_file = fopen("/requests/log.html", "w+");
     if (!log_file) {
         perror("Failed to open HTML file");
         return;
     }
+
+    // sort by date
+    // get number
+    size_t num_entries = 0;
+    log_node* current = log_root;
+    while(current){
+        num_entries++;
+        current = current->next;
+    }
+    log_node** log_heap = malloc(sizeof(log_node*) * num_entries);
+    current = log_root;
+    for(size_t index = 0; index < num_entries; index++){
+        log_heap[index] = current;
+        current = current->next;
+        for(size_t insert = index; insert > 0; insert = insert / 2){
+            if(strcmp(log_heap[insert/2]->timestamp, log_heap[insert]->timestamp) <= 0){
+                break;
+            } else {
+                log_node* tmp = log_heap[insert];
+                log_heap[insert] = log_heap[insert/2];
+                log_heap[insert/2] = tmp;
+            }
+        }
+    } 
 
     // write preamble 
     fprintf(log_file, "<!DOCTYPE html>\n");
@@ -172,13 +198,57 @@ void render_logs_to_html(log_node *log_root) {
     fprintf(log_file, "        </tr>\n");
 
     // write log information
-    for(log_node* current = log_root; current != NULL; current = current->next){
+    for(; num_entries > 0; num_entries--){
+        current = log_heap[0];
         fprintf(log_file, "        <tr>\n");
         fprintf(log_file, "            <th>%s</th>\n", current->timestamp);
         fprintf(log_file, "            <th>%s</th>\n", current->server_id);
         fprintf(log_file, "            <th>%s</th>\n", current->type);
         fprintf(log_file, "            <th>%s</th>\n", current->details);
         fprintf(log_file, "        </tr>\n");
+        // remove current root from heap
+        size_t index = 0;
+        log_heap[0] = log_heap[num_entries-1];
+        // trade down until no more children
+        while(index*2 + 1 < num_entries){
+            // compare with first child
+            int is_bigger = strcmp(log_heap[index]->timestamp, log_heap[index*2+1]->timestamp);
+            // check if second child exists
+            if(index*2 + 2 >= num_entries){
+                // second child does not exist, if is bigger than child swap
+                if(is_bigger > 0){
+                    log_node* tmp = log_heap[index];
+                    log_heap[index] = log_heap[index*2+1];
+                    log_heap[index*2+1] = tmp;
+                }
+                break;
+            }
+            // know fist child is smaller, if second is smaller than first swap with second otherwise with first
+            if(is_bigger > 0){
+                size_t swap_index;
+                if(strcmp(log_heap[index*2+1]->timestamp, log_heap[index*2+2]->timestamp) <= 0){
+                    // first is smaller
+                    swap_index = index*2+1;
+                } else {
+                    swap_index = index*2+2;
+                }
+                log_node* tmp = log_heap[index];
+                log_heap[index] = log_heap[swap_index];
+                log_heap[swap_index] = tmp;
+                index = swap_index;
+            } else {
+                // first is not smaller so need to check second if swap is neccessary
+                if(strcmp(log_heap[index]->timestamp, log_heap[index*2+2]->timestamp) > 0){
+                    // is bigger so need to swap
+                    log_node* tmp = log_heap[index];
+                    log_heap[index] = log_heap[index*2+2];
+                    log_heap[index*2+2] = tmp;
+                    index = index*2+2;
+                } else {
+                    break;
+                }
+            }
+        }
     } 
 
     // write ending
@@ -203,7 +273,7 @@ int main() {
              "Host: %s\r\n"
              "Content-Type: application/json\r\n"
              "Content-Length: %zu\r\n\r\n"
-             "{\"token\": \"%s\"}", auth_server_ip, strlen(auth_token) + 12, auth_token);
+             "{\"token\": \"%s\"}", auth_server_ip, strlen(auth_token) + 13, auth_token);
 
     char auth_response[BUFFER_SIZE];
     if (send_http_request(auth_sock, auth_request, auth_response, BUFFER_SIZE) < 0) {

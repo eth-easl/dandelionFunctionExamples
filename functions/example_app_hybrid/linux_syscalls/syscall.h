@@ -49,6 +49,11 @@ static inline int linux_socket(int domain, int type, int protocol) {
   return __syscall(SYS_socket, domain, type, protocol);
 }
 
+struct sockaddr {
+  unsigned short sa_family;
+  char sa_data[14];
+};
+
 struct in_addr {
     uint32_t s_addr;
 };
@@ -57,6 +62,10 @@ struct sockaddr_in {
     unsigned short sin_family;
     uint16_t sin_port;
     struct in_addr sin_addr;
+    unsigned char sin_zero[sizeof (struct sockaddr)
+      - sizeof(unsigned short)
+      - sizeof(uint16_t)
+      - sizeof(struct in_addr)];
 };
 
 static inline int linux_connect(int socketfd, const struct sockaddr_in* addr, int addrlen){
