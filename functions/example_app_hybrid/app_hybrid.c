@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE 4096
 #define SERVER_NUMBER 10
-#define AUTH_SERVER_PORT 80
+const uint16_t AUTH_SERVER_PORT = 8080;
 
 // Structure to store log event details
 typedef struct log_node {
@@ -32,18 +32,36 @@ char event_template[] =
 "}";
 
 
-unsigned short my_htons(unsigned short port) {
-    return (port >> 8) | (port << 8);
+uint16_t my_htons(uint16_t port) {
+    return ((port >> 8) & 0x00FF) | ((port << 8) & 0xFF00);
 }
 
-int my_inet_pton(const char *src, uint32_t *dst) {
-    unsigned int b1, b2, b3, b4;
-    if (sscanf(src, "%u.%u.%u.%u", &b1, &b2, &b3, &b4) != 4) return 0;
-    *dst = (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
-    return 1;
+int my_inet_pton(int af, const char *src, void *dst) {
+    if (af == LINUX_AF_INET) {
+        uint8_t array[4] = {};
+        for (int i = 0; i < 4; i++) {
+            char *end;
+            long value = strtol(src, &end, 10);
+            if (value < 0 || value > 255) {
+                return 0; 
+            }
+
+            if (*end != '\0' && *end != '.' && i < 3) {
+                return 0;
+            }
+            src = end + 1;
+            array[i] = (uint8_t)value;
+        }
+
+        struct in_addr *addr = (struct in_addr *)dst;
+        memcpy(&addr->s_addr, array, 4);  // Copy the 4 bytes into s_addr
+        
+        return 1;  // Success
+    }
+    return -1;  // Unsupported address family
 }
 
-int connect_to_server(const char *ip, int port) {
+int connect_to_server(const char *ip, uint16_t port) {
     struct sockaddr_in server_addr;
 
     int sockfd = linux_socket(LINUX_AF_INET, LINUX_SOCK_STREAM, 0);
@@ -55,13 +73,24 @@ int connect_to_server(const char *ip, int port) {
     server_addr.sin_family = LINUX_AF_INET;
     server_addr.sin_port = my_htons(port);
 
-    my_inet_pton(ip, &server_addr.sin_addr.s_addr); 
+    if (my_inet_pton(LINUX_AF_INET, ip, &server_addr.sin_addr) != 1) {
+        perror("Invalid IP address");
+        close(sockfd);
+        return -1;
+    }
 
-    if (linux_connect(sockfd, &server_addr, sizeof(server_addr)) < 0) {
+    printf("s_addr: 0x%08X\n", server_addr.sin_addr.s_addr);
+
+    int err = linux_connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    if (err < 0) {
+        printf("Error: %d\n", err);
+        printf("size of server_addr: %ld\n", sizeof(server_addr));
         perror("Socket connection failed");
         close(sockfd);
         return -1;
     }
+
+    printf("Socket connected\n");
 
     return sockfd;
 }
@@ -161,8 +190,7 @@ void render_logs_to_html(log_node *log_root) {
 
 // Main function to handle authorization, log fetching, and rendering
 int main() {
-    
-    const char *auth_server_ip = "10.233.0.12";
+    const char *auth_server_ip = "127.0.0.1";
     const char *auth_token = "fapw84ypf3984viuhsvpoi843ypoghvejkfld";
 
     // handle
@@ -182,6 +210,7 @@ int main() {
         close(auth_sock);
         return 1;
     }
+
     close(auth_sock);
 
     char token[256];
