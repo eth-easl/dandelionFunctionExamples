@@ -8,7 +8,12 @@ include(FetchContent)
 # option to include libc-dependent examples
 set(ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR} CACHE STRING "the architecture to build for")
 set(PLATFORM "debug" CACHE STRING "backend to build for")
-message(STATUS "Building for ${PLATFORM} on ${ARCHITECTURE}")
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+message(STATUS "Building ${CMAKE_BUILD_TYPE} for ${PLATFORM} on ${ARCHITECTURE}")
 
 # prevent in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
