@@ -28,7 +28,7 @@ endif()
 FetchContent_Declare(
   dandelion_sdk
   DOWNLOAD_COMMAND gh release download latest -R eth-easl/dandelionFunctionInterface -p "*${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz"
-  COMMAND tar -xzf "dandelion_sdk_${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz" -C ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND tar -xzf "dandelion_sdk_${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz" -C ${CMAKE_BINARY_DIR}
 )
 FetchContent_MakeAvailable(dandelion_sdk)
 
@@ -41,34 +41,41 @@ execute_process(
 
 add_library(dandelion_runtime INTERFACE IMPORTED)
 target_include_directories(dandelion_runtime INTERFACE
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/include"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/include"
 )
 target_compile_options(dandelion_runtime INTERFACE -nostdinc -idirafter${COMPILER_RUNTIME_INCLUDE})
 target_link_libraries(dandelion_runtime INTERFACE
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libdandelion_runtime.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libdandelion_system.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libdandelion_runtime.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libdandelion_system.a"
 )
 target_link_options(dandelion_runtime INTERFACE -static -nostdlib)
 
 add_library(dlibc INTERFACE IMPORTED)
 target_include_directories(dlibc INTERFACE
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/include"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/include/sys"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/include"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/include/sys"
 )
 target_link_libraries(dlibc INTERFACE
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libc.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libg.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libm.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libdandelion_file_system.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libc.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libg.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libm.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libdandelion_file_system.a"
 )
-target_link_options(dlibc INTERFACE -T${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/linker.ld)
+target_link_options(dlibc INTERFACE -T${CMAKE_BINARY_DIR}/dandelion_sdk/linker.ld)
 
 add_library(dlibcxx INTERFACE IMPORTED)
-target_include_directories(dlibcxx INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/include/c++/v1")
+target_include_directories(dlibcxx INTERFACE "${CMAKE_BINARY_DIR}/dandelion_sdk/include/c++/v1")
 target_link_libraries(dlibcxx INTERFACE
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libc++.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libc++abi.a"
-  "${CMAKE_CURRENT_BINARY_DIR}/dandelion_sdk/lib/libunwind.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libc++.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libc++abi.a"
+  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libunwind.a"
+)
+
+# create compiler wrapper for use to compile non integrated programs
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cfg_template.txt
+  ${CMAKE_BINARY_DIR}/dandelion.cfg
+  FILE_PERMISSIONS OWNER_READ OWNER_EXECUTE
 )
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
