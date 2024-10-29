@@ -260,7 +260,7 @@ void render_logs_to_html(log_node *log_root) {
 
 // Main function to handle authorization, log fetching, and rendering
 int main() {
-    const char *auth_server_ip = "127.0.0.1";
+    const char *auth_server_ip = "10.233.0.13";
     const char *auth_token = "fapw84ypf3984viuhsvpoi843ypoghvejkfld";
 
     // handle
