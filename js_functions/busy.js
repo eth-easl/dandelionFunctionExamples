@@ -40,9 +40,6 @@ async function handleRequest(request) {
     const getUri = getRequestString.replace(/^GET /, "").replace(/ HTTP\/1.1$/, "");
     const postUri = postRequestString.replace(/^POST /, "").replace(/ HTTP\/1.1\n\n$/, "");
 
-    console.log("Received GET request URI:", getUri);
-    console.log("Received POST request URI:", postUri);
-
     // Call ioService to perform GET, simulate busy function, and POST
     const responseData = await ioService(getUri, postUri);
 
@@ -67,8 +64,6 @@ async function ioService(getUri, postUri) {
 
   const checksum = busy(Number(iterations));
   dataView.setBigUint64(0, BigInt(checksum), true);
-
-  console.log("Updated getRequestBuf with checksum:", getRequestBuf);
 
   const postResponse = await fetch(postUri, {
     method: "POST",
