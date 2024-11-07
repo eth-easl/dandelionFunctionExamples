@@ -1,5 +1,6 @@
 # compilation target
---target=@aRCHITECTURE@-linux-elf
+--target=@ARCHITECTURE@-unknown-elf
+-D_GNU_SOURCE=1
 
 # include flags
 -nostdinc
@@ -8,6 +9,9 @@
 -idirafter@COMPILER_RUNTIME_INCLUDE@
 
 # linker flags
+-T@CMAKE_BINARY_DIR@/dandelion_sdk/linker.ld
+-fuse-ld=lld
+-static
 -nostdlib
 -L@CMAKE_BINARY_DIR@/dandelion_sdk/lib
 -lm 

@@ -75,7 +75,14 @@ target_link_libraries(dlibcxx INTERFACE
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/cfg_template.txt
   ${CMAKE_BINARY_DIR}/dandelion.cfg
-  FILE_PERMISSIONS OWNER_READ OWNER_EXECUTE
+  FILE_PERMISSIONS OWNER_READ 
+)
+
+# create compiler wrapper for use to compile non integrated programs
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cfg++_template.txt
+  ${CMAKE_BINARY_DIR}/dandelion++.cfg
+  FILE_PERMISSIONS OWNER_READ 
 )
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -113,3 +120,33 @@ add_subdirectory(files)
 add_subdirectory(stdio)
 add_subdirectory(stdio_cxx)
 add_subdirectory(example_app_hybrid)
+
+set(CONFIG_FLAG "--config ${CMAKE_BINARY_DIR}/dandelion.cfg")
+set(CONFIG_FLAGXX "--config ${CMAKE_BINARY_DIR}/dandelion++.cfg")
+
+include(ExternalProject)
+ExternalProject_Add(
+  llvmproject
+  PREFIX llvmproject
+  GIT_REPOSITORY https://github.com/llvm/llvm-project
+  GIT_TAG release/18.x
+  SOURCE_SUBDIR llvm
+  UPDATE_DISCONNECTED 1
+  INSTALL_DIR ${CMAKE_BINARY_DIR}/llvm
+  LIST_SEPARATOR ","
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+      -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
+      -DCMAKE_SYSTEM_NAME=Generic
+      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+      -DCMAKE_C_FLAGS:STRING=${CONFIG_FLAG}
+      -DCMAKE_CXX_FLAGS:STRING=${CONFIG_FLAGXX}
+      -DLLVM_ENABLE_PROJECTS=clang,lld
+      -DLLVM_TARGETS_TO_BUILD=AArch64,X86
+      -DBUILD_SHARED_LIBS=OFF
+      -DLLVM_ENABLE_PIC=OFF
+      -DLLVM_ENABLE_THREADS=OFF
+  EXCLUDE_FROM_ALL TRUE
+)
