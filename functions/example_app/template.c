@@ -17,12 +17,12 @@ typedef struct log_node{
 } log_node;
 
 char event_template[] = 
-"%*[^{]"
-"\"details\":\"%100[^\"],"
-"\"event_type\":\"%100[^\"],"
-"\"server_id\":\"%100[^\"],"
-"\"timestamp\":\"%100[^\"]"
-"}";
+"{"
+"\"details\":\"%100[^\"]\","
+"\"event_type\":\"%100[^\"]\","
+"\"server_id\":\"%100[^\"]\","
+"\"timestamp\":\"%100[^\"]\""
+"%*[^{]";
 
 int main(int argc, char const *argv[]) {
 

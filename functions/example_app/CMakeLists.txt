@@ -14,22 +14,22 @@ add_executable(${TEMPLATE}
   template.c
 )
 
-target_compile_options(${HANDLE} PRIVATE -static -O3)
-target_link_options(${HANDLE} PRIVATE -static)
+target_compile_options(${HANDLE} PRIVATE -static -Os -flto)
+target_link_options(${HANDLE} PRIVATE -static -Os -flto)
 target_link_libraries(${HANDLE} PRIVATE
   dlibc
   dandelion_runtime
 )
 
-target_compile_options(${FAN_OUT} PRIVATE -static -O3)
-target_link_options(${FAN_OUT} PRIVATE -static)
+target_compile_options(${FAN_OUT} PRIVATE -static -Os -flto)
+target_link_options(${FAN_OUT} PRIVATE -static -Os -flto)
 target_link_libraries(${FAN_OUT} PRIVATE
   dlibc
   dandelion_runtime
 )
 
-target_compile_options(${TEMPLATE} PRIVATE -static -O3)
-target_link_options(${TEMPLATE} PRIVATE -static)
+target_compile_options(${TEMPLATE} PRIVATE -static -Os -flto)
+target_link_options(${TEMPLATE} PRIVATE -static -Os -flto)
 target_link_libraries(${TEMPLATE} PRIVATE
   dlibc
   dandelion_runtime

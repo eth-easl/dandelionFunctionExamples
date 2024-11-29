@@ -92,8 +92,8 @@ int connect_to_server(const char *ip, uint16_t port) {
 }
 
 
-int send_http_request(int sockfd, const char *request, char *response, size_t response_size) {
-    if (linux_send(sockfd, request, strlen(request), 0) < 0) {
+int send_http_request(int sockfd, const char *request, size_t request_size, char *response, size_t response_size) {
+    if (linux_send(sockfd, request, request_size, 0) < 0) {
         perror("Send failed");
         return -1;
     }
@@ -260,23 +260,53 @@ void render_logs_to_html(log_node *log_root) {
 
 // Main function to handle authorization, log fetching, and rendering
 int main() {
-    const char *auth_server_ip = "10.233.0.13";
-    const char *auth_token = "fapw84ypf3984viuhsvpoi843ypoghvejkfld";
+    // read authentification server ip from file
+    FILE *auth_server = fopen("/servers/server.txt", "r");
+    if (auth_server == NULL) {
+        perror("Failed to open file to get auth server");
+        return -1;
+    }
+    char *auth_server_ip = NULL;
+    size_t server_line_len = 0;
+    size_t read_chars = __getline(&auth_server_ip, &server_line_len, auth_server);
+    if (read_chars  < 0) {
+        perror("Fauled to read line from auth server file\n");
+        return -1;
+    }
+    // strip possible endln from the getline
+    if(auth_server_ip[read_chars-1] == '\n'){
+        auth_server_ip[read_chars-1] = '\0';
+    }
+
+    // read token from incomming file
+    FILE *token_file = fopen("/responses/Authorization", "r");
+    if (token_file == NULL) {
+        perror("Failed to open file with token");
+        return -1;
+    }
+    char auth_token[257] = {0};
+    if (fscanf(token_file, "Bearer %256s", auth_token) < 0) {
+        perror("Failed to parse line from token file");
+        return -1;
+    } 
 
     // handle
     int auth_sock = connect_to_server(auth_server_ip, AUTH_SERVER_PORT);
     if (auth_sock < 0) return 1;
 
     char auth_request[BUFFER_SIZE];
-    snprintf(auth_request, sizeof(auth_request),
-             "POST /authorize HTTP/1.1\r\n"
-             "Host: %s\r\n"
-             "Content-Type: application/json\r\n"
-             "Content-Length: %zu\r\n\r\n"
+    int written = snprintf(auth_request, sizeof(auth_request),
+             "POST /authorize HTTP/1.1\n"
+             "Host: %s\n"
+             "Content-Type: application/json\n"
+             "Content-Length: %zu\n\n"
              "{\"token\": \"%s\"}", auth_server_ip, strlen(auth_token) + 13, auth_token);
-
+    if(written < 0 || written > BUFFER_SIZE){
+        perror("Failed to format auth request");
+        return -1;
+    }
     char auth_response[BUFFER_SIZE];
-    if (send_http_request(auth_sock, auth_request, auth_response, BUFFER_SIZE) < 0) {
+    if (send_http_request(auth_sock, auth_request, written, auth_response, BUFFER_SIZE) < 0) {
         close(auth_sock);
         return 1;
     }
@@ -288,22 +318,70 @@ int main() {
 
     // fan_out
     log_node *log_root = NULL;
-    char log_request[BUFFER_SIZE];
-    char log_response[BUFFER_SIZE];
+    char log_request[SERVER_NUMBER][BUFFER_SIZE];
+    int request_length[SERVER_NUMBER];
+    char log_response[SERVER_NUMBER][BUFFER_SIZE];
+    size_t response_read[SERVER_NUMBER];
+    struct pollfd poll_fds[SERVER_NUMBER]; 
 
-    for (int i = 0; i < SERVER_NUMBER; ++i) {
-        int log_sock = connect_to_server(auth_server_ip, AUTH_SERVER_PORT);
-        if (log_sock < 0) continue;
-
-        snprintf(log_request, sizeof(log_request),
-                 "GET /logs/%d HTTP/1.1\r\n"
-                 "Host: %s\r\n"
-                 "Authorization: Bearer %s\r\n\r\n", i, auth_server_ip, token);
-
-        if (send_http_request(log_sock, log_request, log_response, BUFFER_SIZE) == 0) {
-            parse_log_events(log_response, &log_root);
+    int log_sockets[SERVER_NUMBER];
+    // open sockets
+    for(int server = 0; server < SERVER_NUMBER; server++){
+        log_sockets[server] = connect_to_server(auth_server_ip, AUTH_SERVER_PORT);
+        if(log_sockets[server] < 0){
+            perror("Failed to open log socket");
+            return -1;
         }
-        close(log_sock);
+    }
+    // format requests
+    for (int server = 0; server < SERVER_NUMBER; server++) {
+        request_length[server] = snprintf(log_request[server], sizeof(log_request[server]),
+                 "GET /logs/%d HTTP/1.1\n"
+                 "Host: %s\n"
+                 "Authorization: Bearer %s\n\n", server, auth_server_ip, token);
+        if(request_length < 0){
+            perror("Could not format server log request");
+            return -1;
+        }
+    }
+    // issue all requests
+    for (int server = 0; server < SERVER_NUMBER; server++){
+        if (linux_send(log_sockets[server], log_request[server], request_length[server], 0) < 0) {
+            perror("Send failed");
+            return -1;
+        }
+        response_read[server] = 0;
+        poll_fds[server].fd = log_sockets[server];
+        poll_fds[server].events = POLLIN;
+        poll_fds[server].revents = 0;
+    }
+    unsigned int received_responses = 0;
+    while(received_responses < SERVER_NUMBER){
+        int poll_result = linux_ppoll(poll_fds, SERVER_NUMBER);
+        if(poll_result < 0) {
+            perror("Polling failed");
+            return -1;
+        }
+        // check all the file descriptors for arrived data
+        for(int server = 0; server < SERVER_NUMBER; server++){
+            if(poll_fds[server].fd > 0 && (poll_fds[server].revents & (POLLIN | POLLHUP))){
+                received_responses++;
+                // disable further polling on this socket
+                poll_fds[server].fd = -1;
+                int new_data = linux_recv(log_sockets[server], log_response[server] + response_read[server], BUFFER_SIZE - response_read[server] - 1, 0);
+                if(new_data < 0) {
+                    perror("Failed to read from socket");
+                    return -1;
+                }
+                response_read[server] += new_data;
+                log_response[server][new_data] = '\0';
+                parse_log_events(log_response[server], &log_root);
+            }
+        }
+    }
+    // close sockets
+    for(int server = 0; server < SERVER_NUMBER; server++){
+        close(log_sockets[server]);
     }
 
     // render

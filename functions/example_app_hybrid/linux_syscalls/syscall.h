@@ -17,6 +17,14 @@
 #define LINUX_AF_INET 2
 #define LINUX_SOCK_STREAM 1
 
+// poll defines
+#define POLLIN		0x0001
+#define POLLPRI		0x0002
+#define POLLOUT		0x0004
+#define POLLERR		0x0008
+#define POLLHUP		0x0010
+#define POLLNVAL	0x0020
+
 #ifndef __scc
 #define __scc(X) ((long)(X))
 typedef long syscall_arg_t;
@@ -82,6 +90,16 @@ static inline ptrdiff_t linux_recv(int socketfd, void* buf, size_t len, int flag
 
 static inline int linux_close(int fd){
   return __syscall(SYS_close, fd);
+}
+
+struct pollfd {
+  int fd;
+  short events;
+  short revents;
+};
+
+static inline int linux_ppoll(struct pollfd* fds, unsigned int nfds) {
+  return __syscall(SYS_ppoll, fds, nfds, NULL, NULL);
 }
 
 #endif

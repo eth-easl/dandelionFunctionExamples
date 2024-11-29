@@ -7,6 +7,7 @@
 #define SYS_lseek 62
 #define SYS_read 63
 #define SYS_write 64
+#define SYS_ppoll 73
 #define SYS_exit_group 94
 #define SYS_socket 198
 #define SYS_connect 203
