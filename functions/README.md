@@ -7,10 +7,11 @@ through mlibc.
 
 # Building the C functions
 The cmake build process will build the functions based on the latest version of the dandelion SDK.
-For this cmake meeds to know the platform to build for (cheri, mmu_freebsd, mmu_linux, debug) and architecture.
+For this cmake meeds to know the platform to build for (cheri, mmu_freebsd, mmu_linux, debug) and architecture (x86_64, aarch64)
+The build type can be Release or Debug.
 From the top folder functions can be built with:
 ```
 mkdir build
 cd build
-cmake -DPLATFORM=<platform> -DARCHITECTURE=<target arch> ../functions
+cmake -DPLATFORM=<platform> -DARCHITECTURE=<target arch> -DCMAKE_BUILD_TYPE-<type> ../functions
 ```
