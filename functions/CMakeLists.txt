@@ -90,7 +90,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
 endif()
 
 # cheri compile flags
-if("${DANDELION_PLATFORM}" STREQUAL "cheri")
+if("${PLATFORM}" STREQUAL "cheri")
   add_compile_options(-march=morello -mabi=aapcs)
   add_link_options(-march=morello -mabi=aapcs -fuse-ld=lld -Xlinker --image-base=0x10000)
   get_property(CROSS_COMPILE_OPTIONS DIRECTORY PROPERTY COMPILE_OPTIONS)
@@ -98,7 +98,7 @@ if("${DANDELION_PLATFORM}" STREQUAL "cheri")
   get_property(CROSS_LINK_OPTIONS DIRECTORY PROPERTY LINK_OPTIONS)
   string(REPLACE ";" " " CROSS_LINK_OPTIONS "${CROSS_LINK_OPTIONS}")
 # WebAssembly flags
-elseif("${DANDELION_PLATFORM}" STREQUAL "wasm")
+elseif("${PLATFORM}" STREQUAL "wasm")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --verbose -target wasm32-unknown-unknown -Wl,--export-all -Wl,--import-undefined -Wl,--import-memory")
 else()
 # currently still want to set the base image lower for all other images, if some don't want make special case
@@ -120,6 +120,7 @@ add_subdirectory(files)
 add_subdirectory(stdio)
 add_subdirectory(stdio_cxx)
 add_subdirectory(example_app_hybrid)
+add_subdirectory(compression)
 
 set(CONFIG_FLAG "--config ${CMAKE_BINARY_DIR}/dandelion.cfg")
 set(CONFIG_FLAGXX "--config ${CMAKE_BINARY_DIR}/dandelion++.cfg")
