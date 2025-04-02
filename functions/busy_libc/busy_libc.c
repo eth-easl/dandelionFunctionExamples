@@ -23,7 +23,6 @@ size_t read_file_to_string(const char *filename, char **content) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
-        return -1;
     }
 
     // Get file size
@@ -35,7 +34,6 @@ size_t read_file_to_string(const char *filename, char **content) {
     *content = (char *)malloc(file_size + 1);
     if (*content == NULL) {
         perror("Error allocating memory");
-        return -1; // Memory allocation failed
     }
 
     // Read file into the buffer
@@ -49,7 +47,7 @@ size_t read_file_to_string(const char *filename, char **content) {
 int main() {
     char *data = NULL;
     size_t data_len = read_file_to_string(FETCH_REQUEST_PATH, &data);
-    if (data < 0)
+    if (data == NULL)
         return 1;
 
     uint64_t iterations = *(uint64_t *)data;
@@ -84,7 +82,7 @@ int main() {
     char *store_preamble = NULL;
     size_t store_preamble_len =
         read_file_to_string(STORE_PREAMBLE_PATH, &store_preamble);
-    if (store_preamble_len < 0)
+    if (store_preamble == NULL)
         return 7;
     store_preamble_len -= 2; // omit \n\n at the end
 

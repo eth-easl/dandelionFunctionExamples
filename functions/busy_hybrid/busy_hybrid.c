@@ -152,7 +152,6 @@ size_t read_file_to_string(const char *filename, char **content) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
-        return -1;
     }
 
     // Get file size
@@ -164,7 +163,6 @@ size_t read_file_to_string(const char *filename, char **content) {
     *content = (char *)malloc(file_size + 1);
     if (*content == NULL) {
         perror("Error allocating memory");
-        return -1; // Memory allocation failed
     }
 
     // Read file into the buffer
@@ -179,7 +177,7 @@ int main() {
     char *fetch_preamble = NULL;
     size_t fetch_preamble_len =
         read_file_to_string(FETCH_REQUEST_PATH, &fetch_preamble);
-    if (fetch_preamble < 0)
+    if (fetch_preamble == NULL)
         return 1;
 
     char server_ip[16];
@@ -246,7 +244,7 @@ int main() {
     char *store_preamble = NULL;
     size_t store_preamble_len =
         read_file_to_string(STORE_PREAMBLE_PATH, &store_preamble);
-    if (store_preamble_len < 0)
+    if (store_preamble == NULL)
         return 7;
     store_preamble_len -= 2; // omit \n\n at the end
 
