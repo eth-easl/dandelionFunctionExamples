@@ -120,6 +120,7 @@ ssize_t send_http_request(int sockfd, const char *request, size_t request_size,
         return -1;
     }
 
+    // TODO: ensure the entire HTTP response has been received
     ssize_t total_received = 0, bytes;
     // while ((bytes = linux_recv(sockfd, response + total_received,
     // response_size - total_received - 1, 0)) > 0) {

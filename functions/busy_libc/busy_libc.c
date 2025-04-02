@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "dandelion/runtime.h"
 #include "unistd.h"
 
 #define ARRAY_ITEMS 16
@@ -45,10 +46,14 @@ size_t read_file_to_string(const char *filename, char **content) {
 }
 
 int main() {
-    char *data = NULL;
-    size_t data_len = read_file_to_string(FETCH_REQUEST_PATH, &data);
-    if (data == NULL)
-        return 1;
+    // use dandelion runtime interface directly to avoid data copy
+    IoBuffer *data_buffer = dandelion_get_input(0, 0);
+    char *data = (char *)data_buffer->data;
+    size_t data_len = data_buffer->data_len;
+    // char *data = NULL;
+    // size_t data_len = read_file_to_string(FETCH_REQUEST_PATH, &data);
+    // if (data == NULL)
+    //     return 1;
 
     uint64_t iterations = *(uint64_t *)data;
     data_item *data_items = (data_item *)(data + 8);
