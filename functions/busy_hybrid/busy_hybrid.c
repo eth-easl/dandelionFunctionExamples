@@ -205,6 +205,7 @@ int main() {
         sock, fetch_request, fetch_request_len, fetch_response, BUFFER_SIZE);
     if (fetch_response_len < 0)
         return 5;
+    close(sock);
 
     char *fetch_response_body;
     size_t fetch_response_body_len;
@@ -267,6 +268,9 @@ int main() {
 
     // posting data
     char *store_response = fetch_response;
+    sock = connect_to_server(server_ip, server_port);
+    if (sock < 0)
+        return 3;
     ssize_t store_response_len = send_http_request(
         sock, store_request, store_request_len, store_response, BUFFER_SIZE);
     if (store_response_len < 0)
