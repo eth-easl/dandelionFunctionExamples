@@ -113,6 +113,8 @@ add_subdirectory(matmac)
 add_subdirectory(matmul)
 add_subdirectory(example_app_nolibc)
 
+add_subdirectory(tokenizer)
+
 # dependent on dlibc
 add_subdirectory(dirigent_busy)
 add_subdirectory(example_app)
