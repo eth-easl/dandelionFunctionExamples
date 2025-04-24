@@ -6,17 +6,12 @@ Some functions depend on the function interface directly while others use it
 through mlibc.
 
 # Building the C functions
-The cmake build process will build the function interface, libc and the functions.
-To do so cmake needs to know that it needs to use the cross compile file dandelion.
-Additionally, cmake and needs to know the platform to build for (cheri, mmu_freebsd, mmu_linux).
+The cmake build process will build the functions based on the latest version of the dandelion SDK.
+For this cmake meeds to know the platform to build for (cheri, mmu_freebsd, mmu_linux, debug) and architecture (x86_64, aarch64)
+The build type can be Release or Debug.
 From the top folder functions can be built with:
 ```
 mkdir build
 cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=../functions/dandelion.cmake -DDANDELION_PLATFORM=<platform> -DTARGET_CPU=<target arch> ../functions
+cmake -DPLATFORM=<platform> -DARCHITECTURE=<target arch> -DCMAKE_BUILD_TYPE-<type> ../functions
 ```
-The mlibc build currently only seems to work with clang.
-To set this up set CC=clang and CXX=clang++ additionally set LDFLAGS=-fuse-ld=lld
-
-## Building dlibc
-To turn on building of libc enable the cmake option with `-DUSE_LIBC=on`
