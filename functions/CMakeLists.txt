@@ -39,51 +39,7 @@ execute_process(
     COMMAND_ERROR_IS_FATAL ANY
 )
 
-add_library(dandelion_runtime INTERFACE IMPORTED)
-target_include_directories(dandelion_runtime INTERFACE
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/include"
-)
-target_compile_options(dandelion_runtime INTERFACE -nostdinc -idirafter${COMPILER_RUNTIME_INCLUDE})
-target_link_libraries(dandelion_runtime INTERFACE
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libdandelion_runtime.a"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libdandelion_system.a"
-)
-target_link_options(dandelion_runtime INTERFACE -static -nostdlib)
-
-add_library(dlibc INTERFACE IMPORTED)
-target_include_directories(dlibc INTERFACE
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/include"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/include/sys"
-)
-target_link_libraries(dlibc INTERFACE
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libc.a"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libg.a"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libm.a"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libdandelion_file_system.a"
-)
-target_link_options(dlibc INTERFACE -T${CMAKE_BINARY_DIR}/dandelion_sdk/linker.ld)
-
-add_library(dlibcxx INTERFACE IMPORTED)
-target_include_directories(dlibcxx INTERFACE "${CMAKE_BINARY_DIR}/dandelion_sdk/include/c++/v1")
-target_link_libraries(dlibcxx INTERFACE
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libc++.a"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libc++abi.a"
-  "${CMAKE_BINARY_DIR}/dandelion_sdk/lib/libunwind.a"
-)
-
-# create compiler wrapper for use to compile non integrated programs
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/cfg_template.txt
-  ${CMAKE_BINARY_DIR}/dandelion.cfg
-  FILE_PERMISSIONS OWNER_READ 
-)
-
-# create compiler wrapper for use to compile non integrated programs
-configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/cfg++_template.txt
-  ${CMAKE_BINARY_DIR}/dandelion++.cfg
-  FILE_PERMISSIONS OWNER_READ 
-)
+add_subdirectory("${CMAKE_BINARY_DIR}/dandelion_sdk" "${CMAKE_BINARY_DIR}/dandelion_sdk_build")
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     add_compile_options(-gdwarf-4)
@@ -124,32 +80,32 @@ add_subdirectory(compression)
 add_subdirectory(busy_libc)
 add_subdirectory(busy_hybrid)
 
-set(CONFIG_FLAG "--config ${CMAKE_BINARY_DIR}/dandelion.cfg")
-set(CONFIG_FLAGXX "--config ${CMAKE_BINARY_DIR}/dandelion++.cfg")
+# set(CONFIG_FLAG "--config ${CMAKE_BINARY_DIR}/dandelion.cfg")
+# set(CONFIG_FLAGXX "--config ${CMAKE_BINARY_DIR}/dandelion++.cfg")
 
-include(ExternalProject)
-ExternalProject_Add(
-  llvmproject
-  PREFIX llvmproject
-  GIT_REPOSITORY https://github.com/llvm/llvm-project
-  GIT_TAG release/18.x
-  SOURCE_SUBDIR llvm
-  UPDATE_DISCONNECTED 1
-  INSTALL_DIR ${CMAKE_BINARY_DIR}/llvm
-  LIST_SEPARATOR ","
-  CMAKE_ARGS
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-      -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
-      -DCMAKE_SYSTEM_NAME=Generic
-      -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-      -DCMAKE_C_FLAGS:STRING=${CONFIG_FLAG}
-      -DCMAKE_CXX_FLAGS:STRING=${CONFIG_FLAGXX}
-      -DLLVM_ENABLE_PROJECTS=clang,lld
-      -DLLVM_TARGETS_TO_BUILD=AArch64,X86
-      -DBUILD_SHARED_LIBS=OFF
-      -DLLVM_ENABLE_PIC=OFF
-      -DLLVM_ENABLE_THREADS=OFF
-  EXCLUDE_FROM_ALL TRUE
-)
+# include(ExternalProject)
+# ExternalProject_Add(
+#   llvmproject
+#   PREFIX llvmproject
+#   GIT_REPOSITORY https://github.com/llvm/llvm-project
+#   GIT_TAG release/18.x
+#   SOURCE_SUBDIR llvm
+#   UPDATE_DISCONNECTED 1
+#   INSTALL_DIR ${CMAKE_BINARY_DIR}/llvm
+#   LIST_SEPARATOR ","
+#   CMAKE_ARGS
+#       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+#       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+#       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+#       -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY
+#       -DCMAKE_SYSTEM_NAME=Generic
+#       -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
+#       -DCMAKE_C_FLAGS:STRING=${CONFIG_FLAG}
+#       -DCMAKE_CXX_FLAGS:STRING=${CONFIG_FLAGXX}
+#       -DLLVM_ENABLE_PROJECTS=clang,lld
+#       -DLLVM_TARGETS_TO_BUILD=AArch64,X86
+#       -DBUILD_SHARED_LIBS=OFF
+#       -DLLVM_ENABLE_PIC=OFF
+#       -DLLVM_ENABLE_THREADS=OFF
+#   EXCLUDE_FROM_ALL TRUE
+# )

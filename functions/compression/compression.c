@@ -27,6 +27,7 @@ void *realloc_sized(void *old, size_t old_size, size_t new_size) {
 }
 
 #define STBI_WRITE_NO_STDIO
+#define STBIW_ASSERT(x) {}
 #define STBIW_MALLOC(size) dandelion_alloc(size, 8)
 #define STBIW_FREE(ptr) dandelion_free(ptr)
 #define STBIW_REALLOC_SIZED(ptr, old_size, new_size)                           \
