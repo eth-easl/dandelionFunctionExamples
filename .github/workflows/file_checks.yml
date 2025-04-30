@@ -1,0 +1,18 @@
+name: Format checks
+
+on:
+  push:
+    branches: [ "main" ]
+
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest      
+
+    steps: 
+    - uses: actions/checkout@v4
+
+    - name: C format check
+      run: find functions/ -iname '*.h' -o -iname '*.c' | clang-format --dry-run -Werror --files=/dev/stdin --style=LLVM 
