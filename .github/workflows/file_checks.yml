@@ -15,4 +15,4 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: C format check
-      run: find functions/ -iname '*.h' -o -iname '*.c' | clang-format --dry-run -Werror --files=/dev/stdin --style=LLVM 
+      run: find c_functions/ -iname '*.h' -o -iname '*.c' | clang-format --dry-run -Werror --files=/dev/stdin --style=LLVM 
