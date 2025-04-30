@@ -7,7 +7,7 @@
 
 # constants
 # the functions to compile
-FUNCTIONS="basic matmul matmac busy"
+FUNCTIONS="basic matmul matmac busy fan_out_nolibc handle_nolibc template_nolibc"
 BIN_DIR=bin
 FUNCTION_SDK_HEAP_SIZE=2048     # in 64KB pages, = 128MB
 FUNCTION_WASM_MIN_HEAP_SIZE=2   # in pages

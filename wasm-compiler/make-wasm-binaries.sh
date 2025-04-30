@@ -37,7 +37,12 @@ make
 mkdir -p ../wasm-compiler/bin/wasm
 for d in ./*; do
   if [ -d "$d" ]; then
-    if [ "$d" != "./CMakeFiles" ] && [ "$d" != "./functionInterface" ]; then
+    if [ "$d" == "./example_app_nolibc" ]; then
+      echo "TEST PRINT"
+      cp "$d/template_nolibc" "../wasm-compiler/bin/wasm/template_nolibc.wasm"
+      cp "$d/handle_nolibc" "../wasm-compiler/bin/wasm/handle_nolibc.wasm"
+      cp "$d/fan_out_nolibc" "../wasm-compiler/bin/wasm/fan_out_nolibc.wasm"
+    elif [ "$d" != "./CMakeFiles" ] && [ "$d" != "./functionInterface" ]; then
       cp "$d/$d" "../wasm-compiler/bin/wasm/$d.wasm"
     fi
   fi
