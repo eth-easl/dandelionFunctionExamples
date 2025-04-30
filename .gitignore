@@ -1,6 +1,6 @@
 *.swp
 .vscode
-build
+build*
 target
 *.check_cache
 Cargo.lock

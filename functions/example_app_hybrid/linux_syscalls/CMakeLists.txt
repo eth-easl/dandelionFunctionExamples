@@ -1,0 +1,10 @@
+add_library(linux_syscalls INTERFACE)
+
+target_include_directories(linux_syscalls INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+if(ARCHITECTURE MATCHES "aarch64|arm64|ARM64")
+    target_include_directories(linux_syscalls INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/arch/aarch64)
+elseif(ARCHITECTURE MATCHES "x86_64|amd64|AMD64")
+    target_include_directories(linux_syscalls INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/arch/x86_64)
+else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()

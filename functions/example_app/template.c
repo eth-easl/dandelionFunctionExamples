@@ -17,12 +17,12 @@ typedef struct log_node{
 } log_node;
 
 char event_template[] = 
-"%*[^{]"
-"\"details\":\"%100[^\"],"
-"\"event_type\":\"%100[^\"],"
-"\"server_id\":\"%100[^\"],"
-"\"timestamp\":\"%100[^\"]"
-"}";
+"{"
+"\"details\":\"%100[^\"]\","
+"\"event_type\":\"%100[^\"]\","
+"\"server_id\":\"%100[^\"]\","
+"\"timestamp\":\"%100[^\"]\""
+"%*[^{]";
 
 int main(int argc, char const *argv[]) {
 
@@ -47,7 +47,7 @@ int main(int argc, char const *argv[]) {
             size_t line_size = 0;
             char* line_buffer = NULL;
             // read until and including initial [
-            if(getdelim(&line_buffer, &line_size,'[', log_file) < 0){
+            if(__getdelim(&line_buffer, &line_size,'[', log_file) < 0){
                 perror("Failed to read initial json {");
                 return -1;
             }

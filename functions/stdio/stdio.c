@@ -24,7 +24,7 @@ int main(int argc, char const* argv[]) {
   ssize_t written = fwrite(in_buffer, 1, read_chars, stdout);
   if (written != read_chars) return -4;
   // print string arguments
-  for (int iter = 0; iter <= argc; iter++) {
+  for (int iter = 0; iter < argc; iter++) {
     printf("argument %d is %s\n", iter, argv[iter]);
   }
   char* env_home = getenv("HOME");

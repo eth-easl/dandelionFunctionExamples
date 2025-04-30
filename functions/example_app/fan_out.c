@@ -20,7 +20,7 @@ int main(int argc, char const *argv[]) {
   }
   char* server_line = NULL;
   size_t server_line_len = 0;
-  if(getline(&server_line, &server_line_len, log_server) < 0) {
+  if(__getline(&server_line, &server_line_len, log_server) < 0) {
     perror("Fauled to read line from auth server file\n");
     return -1;
   }
@@ -34,7 +34,7 @@ int main(int argc, char const *argv[]) {
   // get the json with the athorization
   char username[21] = {0};
   char token[257] = {0};
-  if (fscanf(auth_file, "{\n    authorized: %20s,\n    token: %256s\n}", username, token) < 0) {
+  if (fscanf(auth_file, "%*[^\"]\"authorized\":\"%20[^\"]\",\"token\":\"%256[^\"]\"}", username, token) < 0) {
     perror("Failed to parse line from token file");
     return -1;
   }

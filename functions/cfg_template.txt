@@ -1,0 +1,22 @@
+# compilation target
+--target=@ARCHITECTURE@-unknown-elf
+-D_GNU_SOURCE=1
+
+# include flags
+-nostdinc
+-idirafter@CMAKE_BINARY_DIR@/dandelion_sdk/include
+-idirafter@CMAKE_BINARY_DIR@/dandelion_sdk/include/sys
+-idirafter@COMPILER_RUNTIME_INCLUDE@
+
+# linker flags
+-T@CMAKE_BINARY_DIR@/dandelion_sdk/linker.ld
+-fuse-ld=lld
+-static
+-nostdlib
+-L@CMAKE_BINARY_DIR@/dandelion_sdk/lib
+-lm 
+-lc 
+-lg 
+-ldandelion_file_system
+-ldandelion_runtime 
+-ldandelion_system

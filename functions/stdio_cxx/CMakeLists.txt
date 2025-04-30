@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION ${CMAKE_VERSION})
 
-set(EXECUTABLE "dirigent_busy")
+set(EXECUTABLE "stdio_cxx")
 
 add_executable(${EXECUTABLE}
-  dirigent_busy.c
+  stdio.cpp
 )
 
-target_compile_options(${EXECUTABLE} PRIVATE -static -O3)
-target_link_options(${EXECUTABLE} PRIVATE -static)
 target_link_libraries(${EXECUTABLE} PRIVATE
+  dlibcxx
   dlibc
   dandelion_runtime
 )

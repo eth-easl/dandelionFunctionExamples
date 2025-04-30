@@ -18,7 +18,7 @@ int main(int argc, char const *argv[]) {
   }
   char* server_line = NULL;
   size_t server_line_len = 0;
-  if(getline(&server_line, &server_line_len, auth_server) < 0) {
+  if(__getline(&server_line, &server_line_len, auth_server) < 0) {
     perror("Fauled to read line from auth server file\n");
     return -1;
   }
