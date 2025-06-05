@@ -80,6 +80,9 @@ add_subdirectory(compression)
 add_subdirectory(busy_libc)
 add_subdirectory(busy_hybrid)
 
+# Alessio:
+add_subdirectory(unzipper)
+
 # set(CONFIG_FLAG "--config ${CMAKE_BINARY_DIR}/dandelion.cfg")
 # set(CONFIG_FLAGXX "--config ${CMAKE_BINARY_DIR}/dandelion++.cfg")
 
