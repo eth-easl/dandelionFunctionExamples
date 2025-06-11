@@ -7,6 +7,7 @@ ExternalProject_Add(libzip
   GIT_TAG v1.11.4
   INSTALL_DIR ${LIBZIP_INSTALL_DIR}
   CMAKE_ARGS
+    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_BINARY_DIR}/dandelion_sdk/dandelion-toolchain.cmake
     -DBUILD_SHARED_LIBS=OFF
     -DENABLE_OPENSSL=OFF
     -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
@@ -17,7 +18,10 @@ add_executable(${EXECUTABLE}
   unzip.c
 )
 
-# target_link_directories(${EXECUTABLE} PRIVATE "/pub/scratch/alrusso/dandelionFunction/libzip-1.11.4/build/lib")
+target_include_directories(${EXECUTABLE} PRIVATE
+  ${LIBZIP_INSTALL_DIR}/include
+)
+
 target_link_libraries(${EXECUTABLE} PRIVATE
   ${LIBZIP_INSTALL_DIR}/lib/libzip.a
   dlibc
