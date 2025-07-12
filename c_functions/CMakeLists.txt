@@ -25,12 +25,17 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 # setup build toolchain
-FetchContent_Declare(
-  dandelion_sdk
-  DOWNLOAD_COMMAND gh release download latest -R eth-easl/dandelionFunctionInterface -p "*${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz"
-  COMMAND tar -xzf "dandelion_sdk_${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz" -C ${CMAKE_BINARY_DIR}
-)
-FetchContent_MakeAvailable(dandelion_sdk)
+# Hardcoded local SDK path
+set(DANDELION_SDK_PATH "/root/dandelion_sdk")
+
+if(NOT EXISTS ${DANDELION_SDK_PATH})
+  message(FATAL_ERROR "Dandelion SDK not found at ${DANDELION_SDK_PATH}")
+else()
+  message(STATUS "Using Dandelion SDK at ${DANDELION_SDK_PATH}")
+endif()
+
+# Include the SDK as a subdirectory
+add_subdirectory(${DANDELION_SDK_PATH} ${CMAKE_BINARY_DIR}/dandelion_sdk_build)
 
 execute_process(
     COMMAND ${CMAKE_C_COMPILER} -print-file-name=include
@@ -38,8 +43,6 @@ execute_process(
     OUTPUT_VARIABLE COMPILER_RUNTIME_INCLUDE
     COMMAND_ERROR_IS_FATAL ANY
 )
-
-add_subdirectory("${CMAKE_BINARY_DIR}/dandelion_sdk" "${CMAKE_BINARY_DIR}/dandelion_sdk_build")
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
     add_compile_options(-gdwarf-4)
@@ -72,6 +75,7 @@ add_subdirectory(example_app_nolibc)
 # dependent on dlibc
 add_subdirectory(dirigent_busy)
 add_subdirectory(example_app)
+add_subdirectory(looping_app)
 add_subdirectory(files)
 add_subdirectory(stdio)
 add_subdirectory(stdio_cxx)
