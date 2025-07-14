@@ -11,6 +11,8 @@
 
 int main(int argc, char const *argv[]) {
 
+  printf("agent_1\n");
+
   // Load llm model
   FILE *llm_model_file = fopen("/responses/llm_model", "r");
   if (llm_model_file == NULL) {
@@ -37,31 +39,53 @@ int main(int argc, char const *argv[]) {
     return -1;
   }
 
-  printf("LLM Endpoint: %s\n", llm_endpoint);
-  printf("LLM Model: %s\n", llm_model);
+  // Load message state
+  FILE *message_state_file = fopen("/responses/message_state", "r");
+  if (message_state_file == NULL) {
+    perror("Failed to open file to get message state");
+    return -1;
+  }
+  char *message_state = NULL;
+  size_t message_state_len = 0;
+  if (__getline(&message_state, &message_state_len, message_state_file) < 0) {
+    printf("No message received yet. Starting conversation with user prompt.\n");
+    // Load prompt
+    FILE *prompt_file = fopen("/responses/prompt", "r");
+    if (prompt_file == NULL) {
+      perror("Failed to open file to get prompt");
+      return -1;
+    }
+    char *prompt = NULL;
+    size_t prompt_len = 0;
+    if (__getline(&prompt, &prompt_len, prompt_file) < 0) {
+      perror("Failed to read line from prompt file\n");
+      return -1;
+    }
+    // Create message object
+    cJSON *message = cJSON_CreateObject();
+    cJSON_AddStringToObject(message, "role", "user");
+    cJSON_AddStringToObject(message, "content", prompt);
 
-  // Create message object
-  cJSON *message = cJSON_CreateObject();
-  cJSON_AddStringToObject(message, "role", "user");
-  cJSON_AddStringToObject(message, "content", "Can you help me with something?");
+    // Create messages array
+    cJSON *messages = cJSON_CreateArray();
+    cJSON_AddItemToArray(messages, message);
+    
+    // Create full payload
+    cJSON *payload = cJSON_CreateObject();
+    cJSON_AddStringToObject(payload, "model", llm_model);
+    cJSON_AddItemToObject(payload, "messages", messages);
+    char *payload_str = cJSON_PrintUnformatted(payload);
 
-  // Create messages array
-  cJSON *messages = cJSON_CreateArray();
-  cJSON_AddItemToArray(messages, message);
-  
-  // Create full payload
-  cJSON *payload = cJSON_CreateObject();
-  cJSON_AddStringToObject(payload, "model", llm_model);
-  cJSON_AddItemToObject(payload, "messages", messages);
-  char *payload_str = cJSON_PrintUnformatted(payload);
+    printf("Payload: %s\n", payload_str);
 
-  printf("Payload: %s\n", payload_str);
-
-  // Write LLM request
-  FILE *llm_request = fopen("/requests/llm_request", "w+");
-  fprintf(llm_request, "POST %s HTTP/1.1\n", llm_endpoint);
-  fprintf(llm_request, "Content-Type: application/json\n\n");
-  fprintf(llm_request, "%s", payload_str);
+    // Write LLM request
+    FILE *llm_request = fopen("/requests/llm_request", "w+");
+    fprintf(llm_request, "POST %s HTTP/1.1\n", llm_endpoint);
+    fprintf(llm_request, "Content-Type: application/json\n\n");
+    fprintf(llm_request, "%s", payload_str);
+  }else{
+    printf("Received message. Stopping after one iteration.\n");
+  }
 
   return 0;
 }

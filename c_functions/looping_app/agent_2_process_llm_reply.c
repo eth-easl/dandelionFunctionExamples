@@ -6,10 +6,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "cJSON.h"
+#include <bson/bson.h>
 
 #include "unistd.h"
 
 int main(int argc, char const *argv[]) {
+
+    printf("agent_2\n");
   
     // Load llm reply
     FILE *llm_reply_file = fopen("/responses/llm_request", "r");
@@ -31,43 +34,83 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
+    char *llm_reply_content = NULL;
     // Extract the content from the LLM reply
     cJSON *choices = cJSON_GetObjectItem(parsed_json, "choices");
     if (choices && cJSON_IsArray(choices)) {
         cJSON *first_choice = cJSON_GetArrayItem(choices, 0);
         cJSON *message = cJSON_GetObjectItem(first_choice, "message");
         cJSON *content = cJSON_GetObjectItem(message, "content");
-        char *content_str = cJSON_PrintUnformatted(content);
-        printf("LLM replied with content: %s\n", content_str);
+        llm_reply_content = cJSON_PrintUnformatted(content);
+        printf("LLM replied with content: %s\n", llm_reply_content);
     } else {
-        char *content_str = cJSON_Print(choices);
-        printf("LLM did not reply with content: %s\n", content_str);
+        char *llm_reply_content = cJSON_Print(choices);
+        printf("LLM did not reply with content: %s\n", llm_reply_content);
     }
-    
 
-/* 
-  // Create message object
-  cJSON *message = cJSON_CreateObject();
-  cJSON_AddStringToObject(message, "role", "user");
-  cJSON_AddStringToObject(message, "content", "Can you help me with something?");
+    // Start BSON document
+    bson_t *doc = bson_new();
+    BSON_APPEND_UTF8(doc, "name", "composition");
 
-  // Create messages array
-  cJSON *messages = cJSON_CreateArray();
-  cJSON_AddItemToArray(messages, message);
-  
-  // Create full payload
-  cJSON *payload = cJSON_CreateObject();
-  cJSON_AddStringToObject(payload, "model", llm_model);
-  cJSON_AddItemToObject(payload, "messages", messages);
-  char *payload_str = cJSON_PrintUnformatted(payload);
+    // Start sets array
+    bson_t sets;
+    BSON_APPEND_ARRAY_BEGIN(doc, "sets", &sets);
 
-  printf("Payload: %s\n", payload_str);
+    // Start the first input set
+    bson_t set_obj;
+    BSON_APPEND_DOCUMENT_BEGIN(&sets, "0", &set_obj);
+    BSON_APPEND_UTF8(&set_obj, "identifier", "inputs");
 
-  // Write LLM request
-  FILE *llm_request = fopen("/requests/llm_request", "w+");
-  fprintf(llm_request, "POST %s HTTP/1.1\n", llm_endpoint);
-  fprintf(llm_request, "Content-Type: application/json\n\n");
-  fprintf(llm_request, "%s", payload_str);
- */
+    // Start the items array
+    bson_t items;
+    BSON_APPEND_ARRAY_BEGIN(&set_obj, "items", &items);
+
+    // Add llm_model item
+    bson_t llm_model_item;
+    BSON_APPEND_DOCUMENT_BEGIN(&items, "0", &llm_model_item);
+
+    BSON_APPEND_UTF8(&llm_model_item, "identifier", "llm_model");
+    BSON_APPEND_INT64(&llm_model_item, "key", 0);
+    BSON_APPEND_BINARY(&llm_model_item, "data", BSON_SUBTYPE_BINARY,
+                       (const uint8_t *)"meta-llama/Llama-3.2-3B-Instruct",
+                       strlen("meta-llama/Llama-3.2-3B-Instruct"));
+    bson_append_document_end(&items, &llm_model_item);
+
+    // Add llm_endpoint item
+    bson_t llm_endpoint_item;
+    BSON_APPEND_DOCUMENT_BEGIN(&items, "1", &llm_endpoint_item);
+
+    BSON_APPEND_UTF8(&llm_endpoint_item, "identifier", "llm_endpoint");
+    BSON_APPEND_INT64(&llm_endpoint_item, "key", 0);
+    BSON_APPEND_BINARY(&llm_endpoint_item, "data", BSON_SUBTYPE_BINARY,
+                       (const uint8_t *)"http://localhost:8081/v1/chat/completions",
+                       strlen("http://localhost:8081/v1/chat/completions"));
+    bson_append_document_end(&items, &llm_endpoint_item);
+
+    // Add message state item
+    bson_t message_state_item;
+    BSON_APPEND_DOCUMENT_BEGIN(&items, "2", &message_state_item);
+
+    BSON_APPEND_UTF8(&message_state_item, "identifier", "message_state");
+    BSON_APPEND_INT64(&message_state_item, "key", 0);
+    BSON_APPEND_BINARY(&message_state_item, "data", BSON_SUBTYPE_BINARY,
+                       (const uint8_t *)llm_reply_content,
+                       strlen(llm_reply_content));
+    bson_append_document_end(&items, &message_state_item);
+
+
+    bson_append_array_end(&set_obj, &items);
+    bson_append_document_end(&sets, &set_obj);
+    bson_append_array_end(doc, &sets);
+
+    size_t len;
+    uint8_t *buf = bson_destroy_with_steal(doc, true, &len);
+
+    // Invoke composition again
+    FILE *composition_request = fopen("/requests/composition_request", "w+");
+    fprintf(composition_request, "POST http://127.0.0.1:8083/hot/c_test HTTP/1.1\n");
+    fprintf(composition_request, "Content-Type: application/bson\n\n");
+    fwrite(buf, 1, len, composition_request);
+
   return 0;
 }
