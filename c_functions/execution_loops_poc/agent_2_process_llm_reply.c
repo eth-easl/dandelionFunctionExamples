@@ -25,21 +25,21 @@ int main(int argc, char const *argv[]) {
     }
 
     // Start BSON document
-    bson_t *doc = bson_new();
-    BSON_APPEND_UTF8(doc, "name", "composition");
+    bson_t *composition_request_doc = bson_new();
+    BSON_APPEND_UTF8(composition_request_doc, "name", "composition");
 
     // Start sets array
     bson_t sets;
-    BSON_APPEND_ARRAY_BEGIN(doc, "sets", &sets);
+    BSON_APPEND_ARRAY_BEGIN(composition_request_doc, "sets", &sets);
 
     // Start the first input set
-    bson_t set_obj;
-    BSON_APPEND_DOCUMENT_BEGIN(&sets, "0", &set_obj);
-    BSON_APPEND_UTF8(&set_obj, "identifier", "inputs");
+    bson_t input_set;
+    BSON_APPEND_DOCUMENT_BEGIN(&sets, "0", &input_set);
+    BSON_APPEND_UTF8(&input_set, "identifier", "inputs");
 
     // Start the items array
     bson_t items;
-    BSON_APPEND_ARRAY_BEGIN(&set_obj, "items", &items);
+    BSON_APPEND_ARRAY_BEGIN(&input_set, "items", &items);
 
     // Add llm_model item
     bson_t llm_model_item;
@@ -59,12 +59,12 @@ int main(int argc, char const *argv[]) {
     add_bson_item_data(llm_reply_content, "message_state", &message_state_item);
     bson_append_document_end(&items, &message_state_item);
 
-    bson_append_array_end(&set_obj, &items);
-    bson_append_document_end(&sets, &set_obj);
-    bson_append_array_end(doc, &sets);
+    bson_append_array_end(&input_set, &items);
+    bson_append_document_end(&sets, &input_set);
+    bson_append_array_end(composition_request_doc, &sets);
 
     // Invoke composition again
-    write_bson_http_request("/requests/composition_request", "http://127.0.0.1:8083/hot/c_test", doc);
+    write_http_request_from_bson("/requests/composition_request", "http://127.0.0.1:8083/hot/c_test", composition_request_doc);
     
   return 0;
 }

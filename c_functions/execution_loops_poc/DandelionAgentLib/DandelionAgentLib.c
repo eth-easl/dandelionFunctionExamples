@@ -10,7 +10,7 @@ void write_http_request(const char *file_path, const char *url, const char *payl
     fprintf(llm_request, "%s", payload);
 }
 
-void write_bson_http_request(const char *file_path, const char *url, bson_t *bson_doc) {
+void write_http_request_from_bson(const char *file_path, const char *url, bson_t *bson_doc) {
     uint32_t bson_doc_len;
     uint8_t *data = bson_destroy_with_steal(bson_doc, true, &bson_doc_len);
 
@@ -39,35 +39,34 @@ int get_input_item(const char *input_path, char **item, size_t *input_len){
     return SUCCESS;
 }
 
-int get_input_item_binary(const char *input_path, char **item, long *file_size){
+int get_input_item_binary(const char *input_path, char **item, long *input_len){
     FILE *compositon_reply_file = fopen(input_path, "r");
     if (compositon_reply_file == NULL) {
-        perror("Failed to open file with composition_request\n");
-        return -1;
+        perror("Failed to open input file\n");
+        return ERR_FILE_DOES_NOT_EXIST;
     }
-    // Get composition reply file size
+    // Get file size
     fseek(compositon_reply_file, 0, SEEK_END);
-    *file_size = ftell(compositon_reply_file);
+    *input_len = ftell(compositon_reply_file);
     rewind(compositon_reply_file);
 
     // Read the file
-    *item = malloc(*file_size);
+    *item = malloc(*input_len);
     if (!*item) {
-        perror("Failed to allocate buffer for composition reply");
+        perror("Failed to allocate buffer.");
         fclose(compositon_reply_file);
-        return -1;
+        return ERR_MEMORY_ALLOCATION;
     }
-    fread(*item, 1, *file_size, compositon_reply_file);
+    fread(*item, 1, *input_len, compositon_reply_file);
     fclose(compositon_reply_file);
     return SUCCESS;
 }
 
 int extract_message_content(const char *llm_reply, const size_t llm_reply_len, char **llm_reply_content){
-    // Parse the LLM reply JSON
     cJSON *parsed_json = cJSON_ParseWithLength(llm_reply, llm_reply_len);
     if (parsed_json == NULL) {
         fprintf(stderr, "Parsing the LLM reply JSON failed.\n");
-        return -1;
+        return ERR_JSON_PARSING;
     }
 
     *llm_reply_content = NULL;
@@ -96,12 +95,6 @@ int extract_message_content(const char *llm_reply, const size_t llm_reply_len, c
     return SUCCESS;
 }
 
-void add_bson_item_data(const char * data, const char * identifier, bson_t * item){
-    BSON_APPEND_UTF8(item, "identifier", identifier);
-    BSON_APPEND_INT64(item, "key", 0);
-    BSON_APPEND_BINARY(item, "data", BSON_SUBTYPE_BINARY, (const uint8_t *)data, strlen(data));
-}
-
 void get_binary_data_item_from_bson(const char *dot_path, const bson_t *bson_doc, const uint8_t **binary_data, uint32_t *binary_len){
     bson_iter_t iter, desc;
     bson_iter_init(&iter, bson_doc);
@@ -110,6 +103,12 @@ void get_binary_data_item_from_bson(const char *dot_path, const bson_t *bson_doc
         bson_subtype_t subtype;
         bson_iter_binary(&desc, &subtype, binary_len, binary_data);
     }
+}
+
+void add_bson_item_data(const char * data, const char * identifier, bson_t * item){
+    BSON_APPEND_UTF8(item, "identifier", identifier);
+    BSON_APPEND_INT64(item, "key", 0);
+    BSON_APPEND_BINARY(item, "data", BSON_SUBTYPE_BINARY, (const uint8_t *)data, strlen(data));
 }
 
 void print_as_ascii(const char * data, const size_t data_len){
