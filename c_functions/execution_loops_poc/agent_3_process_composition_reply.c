@@ -7,60 +7,32 @@
 #include <sys/stat.h>
 #include "cJSON.h"
 #include <bson/bson.h>
+#include "DandelionAgentLib.h"
 
 #include "unistd.h"
 
 int main(int argc, char const *argv[]) {
 
     printf("agent_3\n");
+    char *composition_response;
+    long input_len;
+    get_input_item_bson("/responses/composition_request", &composition_response, &input_len);
 
-    // Load composition reply.
-    FILE *compositon_reply_file = fopen("/responses/composition_request", "r");
-    if (compositon_reply_file == NULL) {
-        perror("Failed to open file with composition_request\n");
-        return -1;
-    }
-
-    // The composition reply is in BSON format, so need to read in binary. (getline breaks because it is not UTF-8)
-    // Get composition reply file size
-    fseek(compositon_reply_file, 0, SEEK_END);
-    long file_size = ftell(compositon_reply_file);
-    rewind(compositon_reply_file);
-
-    // Read the file
-    char *buf = malloc(file_size);
-    if (!buf) {
-        perror("Failed to allocate buffer for composition reply");
-        fclose(compositon_reply_file);
-        return -1;
-    }
-    fread(buf, 1, file_size, compositon_reply_file);
-    fclose(compositon_reply_file);
-
-    printf("Printing printable chars from reply:\n");
-    for (size_t i = 0; i < file_size; i++) {
-        if (buf[i] >= 32 && buf[i] <= 126) {
-            putchar(buf[i]);
-        } else {
-            printf("\\x%02x", (unsigned char)buf[i]);
-        }
-    }
-    printf("\n");
+    print_as_ascii(composition_response, input_len);
 
     // Parse BSON
-    const uint8_t *bson_buf = (const uint8_t *)buf;
-    bson_t *doc = bson_new_from_data(bson_buf, file_size);
+    bson_t *bson_doc = bson_new_from_data((const uint8_t *)composition_response, input_len);
 
-    if (doc) {
+    if (bson_doc) {
         // How to access the data field as readable text? BSON encodes it to base64.
-        char *json_str = bson_as_canonical_extended_json(doc, NULL);
+        char *json_str = bson_as_canonical_extended_json(bson_doc, NULL);
         printf("Parsed BSON as JSON:\n%s\n", json_str);
         bson_free(json_str);
-        bson_destroy(doc);
+        bson_destroy(bson_doc);
     } else {
         printf("Failed to parse as BSON.\n");
     }
 
-    free(buf);
+    free(composition_response);
   return 0;
 }

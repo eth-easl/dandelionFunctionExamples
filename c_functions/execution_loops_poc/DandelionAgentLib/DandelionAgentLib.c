@@ -78,3 +78,40 @@ void add_bson_item_data(const char * data, const char * identifier, bson_t * ite
     BSON_APPEND_INT64(item, "key", 0);
     BSON_APPEND_BINARY(item, "data", BSON_SUBTYPE_BINARY, (const uint8_t *)data, strlen(data));
 }
+
+int get_input_item_bson(const char *input_path, char **item, long *file_size){
+    FILE *compositon_reply_file = fopen(input_path, "r");
+    if (compositon_reply_file == NULL) {
+        perror("Failed to open file with composition_request\n");
+        return -1;
+    }
+
+    // The composition reply is in BSON format, so need to read in binary. (getline breaks because it is not UTF-8)
+    // Get composition reply file size
+    fseek(compositon_reply_file, 0, SEEK_END);
+    *file_size = ftell(compositon_reply_file);
+    rewind(compositon_reply_file);
+
+    // Read the file
+    *item = malloc(*file_size);
+    if (!*item) {
+        perror("Failed to allocate buffer for composition reply");
+        fclose(compositon_reply_file);
+        return -1;
+    }
+    fread(*item, 1, *file_size, compositon_reply_file);
+    fclose(compositon_reply_file);
+    return SUCCESS;
+}
+
+void print_as_ascii(const char * data, const size_t data_len){
+    printf("Printing printable chars:\n");
+    for (size_t i = 0; i < data_len; i++) {
+        if (data[i] >= 32 && data[i] <= 126) {
+            putchar(data[i]);
+        } else {
+            printf("\\x%02x", (unsigned char)data[i]);
+        }
+    }
+    printf("\n");
+}
