@@ -62,6 +62,11 @@ int get_input_item_binary(const char *input_path, char **item, long *input_len){
     return SUCCESS;
 }
 
+void write_output_item(const char *file_path, const char *data) {
+    FILE *output_file = fopen(file_path, "w+");
+    fprintf(output_file, "%s", data);
+}
+
 int extract_message_content(const char *llm_reply, const size_t llm_reply_len, char **llm_reply_content){
     cJSON *parsed_json = cJSON_ParseWithLength(llm_reply, llm_reply_len);
     if (parsed_json == NULL) {

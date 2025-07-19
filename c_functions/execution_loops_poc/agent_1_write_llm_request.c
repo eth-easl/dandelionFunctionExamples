@@ -41,6 +41,7 @@ int main(int argc, char const *argv[]) {
     // Create messages array
     cJSON *messages = cJSON_CreateArray();
     cJSON_AddItemToArray(messages, message);
+    write_output_item("/message_state_out/message_state", cJSON_PrintUnformatted(messages));
     
     // Create full payload
     cJSON *payload = cJSON_CreateObject();
@@ -53,6 +54,9 @@ int main(int argc, char const *argv[]) {
     write_http_request("/requests/llm_request", llm_endpoint, payload_str);
   } else if (err_message_state == SUCCESS) {
     printf("Received message. Stopping after one iteration.\n");
+    printf("Message state was: %s\n", message_state);
+    cJSON *message_state_json = cJSON_ParseWithLength(message_state, message_state_len);
+    printf("Parsed message state after the first iteration: %s\n", cJSON_PrintUnformatted(message_state_json));
   } else {
     return -1;
   }

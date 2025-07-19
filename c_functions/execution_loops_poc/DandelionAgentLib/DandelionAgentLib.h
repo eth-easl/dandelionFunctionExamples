@@ -1,7 +1,8 @@
 #ifndef MYLIB_H
 #define MYLIB_H
 
-#include <bson/bson.h>  
+#include <bson/bson.h>
+#include "cJSON.h"
 
 #define SUCCESS 0
 #define ERR_FILE_DOES_NOT_EXIST -1
@@ -47,6 +48,14 @@ int get_input_item(const char *input_path, char **item, size_t *input_len);
  * @return SUCCESS on success, ERR_FILE_DOES_NOT_EXIST if the file does not exist, or ERR_MEMORY_ALLOCATION if no memory could be allocated.
  */
 int get_input_item_binary(const char *input_path, char **item, long *input_len);
+
+/**
+ * Writes an item to a file.
+ *
+ * @param file_path      The file path to write the output to, e.g., "/responses/llm_request"
+ * @param data           The data to write to the file
+ */
+void write_output_item(const char *file_path, const char *data);
 
 /**
  * Extracts the message content field of an LLM reply.

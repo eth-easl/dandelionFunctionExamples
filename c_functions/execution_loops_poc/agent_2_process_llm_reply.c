@@ -15,14 +15,26 @@ int main(int argc, char const *argv[]) {
 
     printf("agent_2\n");
     char *llm_reply = NULL;
+    char *message_state = NULL;
     size_t llm_reply_len = 0;
+    size_t message_state_len = 0;
     int err_llm_reply = get_input_item("/responses/llm_request", &llm_reply, &llm_reply_len);
+    int err_message_state = get_input_item("/message_state_in/message_state", &message_state, &message_state_len);
 
+    //printf("Parsed message state: %s\n", cJSON_PrintUnformatted(parsed));
+
+    //printf("Extracted message: %s\n", cJSON_PrintUnformatted(assistant_message));
     char* llm_reply_content = NULL;
     int err = extract_message_content(llm_reply, llm_reply_len, &llm_reply_content);
     if (err != SUCCESS) {
         return -1;
     }
+
+    cJSON *message_state_json = cJSON_ParseWithLength(message_state, message_state_len);
+    cJSON *assistant_message = cJSON_CreateObject();
+    cJSON_AddStringToObject(assistant_message, "role", "assistant");
+    cJSON_AddStringToObject(assistant_message, "content", llm_reply_content);
+    cJSON_AddItemToArray(message_state_json, assistant_message);
 
     // Start BSON document
     bson_t *composition_request_doc = bson_new();
@@ -56,7 +68,7 @@ int main(int argc, char const *argv[]) {
     // Add message state item
     bson_t message_state_item;
     BSON_APPEND_DOCUMENT_BEGIN(&items, "2", &message_state_item);
-    add_bson_item_data(llm_reply_content, "message_state", &message_state_item);
+    add_bson_item_data(cJSON_PrintUnformatted(message_state_json), "message_state", &message_state_item);
     bson_append_document_end(&items, &message_state_item);
 
     bson_append_array_end(&input_set, &items);

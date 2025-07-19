@@ -6,3 +6,4 @@ target
 Cargo.lock
 bin
 */dyn-loading-experiments
+c_functions/libbson/
