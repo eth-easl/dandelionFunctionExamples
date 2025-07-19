@@ -38,7 +38,7 @@ int extract_message_content(const char *llm_reply, const size_t llm_reply_len, c
 
     *llm_reply_content = NULL;
     cJSON *choices = cJSON_GetObjectItem(parsed_json, "choices");
-    cJSON_Delete(parsed_json);
+
     if (choices && cJSON_IsArray(choices)) {
         cJSON *first_choice = cJSON_GetArrayItem(choices, 0);
         if(!first_choice) {
