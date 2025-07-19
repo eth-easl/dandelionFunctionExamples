@@ -44,36 +44,20 @@ int main(int argc, char const *argv[]) {
     // Add llm_model item
     bson_t llm_model_item;
     BSON_APPEND_DOCUMENT_BEGIN(&items, "0", &llm_model_item);
-
-    BSON_APPEND_UTF8(&llm_model_item, "identifier", "llm_model");
-    BSON_APPEND_INT64(&llm_model_item, "key", 0);
-    BSON_APPEND_BINARY(&llm_model_item, "data", BSON_SUBTYPE_BINARY,
-                       (const uint8_t *)"meta-llama/Llama-3.2-3B-Instruct",
-                       strlen("meta-llama/Llama-3.2-3B-Instruct"));
+    add_bson_item_data("meta-llama/Llama-3.2-3B-Instruct", "llm_model", &llm_model_item);
     bson_append_document_end(&items, &llm_model_item);
 
     // Add llm_endpoint item
     bson_t llm_endpoint_item;
     BSON_APPEND_DOCUMENT_BEGIN(&items, "1", &llm_endpoint_item);
-
-    BSON_APPEND_UTF8(&llm_endpoint_item, "identifier", "llm_endpoint");
-    BSON_APPEND_INT64(&llm_endpoint_item, "key", 0);
-    BSON_APPEND_BINARY(&llm_endpoint_item, "data", BSON_SUBTYPE_BINARY,
-                       (const uint8_t *)"http://localhost:8081/v1/chat/completions",
-                       strlen("http://localhost:8081/v1/chat/completions"));
+    add_bson_item_data("http://localhost:8081/v1/chat/completions", "llm_endpoint", &llm_endpoint_item);
     bson_append_document_end(&items, &llm_endpoint_item);
 
     // Add message state item
     bson_t message_state_item;
     BSON_APPEND_DOCUMENT_BEGIN(&items, "2", &message_state_item);
-
-    BSON_APPEND_UTF8(&message_state_item, "identifier", "message_state");
-    BSON_APPEND_INT64(&message_state_item, "key", 0);
-    BSON_APPEND_BINARY(&message_state_item, "data", BSON_SUBTYPE_BINARY,
-                       (const uint8_t *)llm_reply_content,
-                       strlen(llm_reply_content));
+    add_bson_item_data(llm_reply_content, "message_state", &message_state_item);
     bson_append_document_end(&items, &message_state_item);
-
 
     bson_append_array_end(&set_obj, &items);
     bson_append_document_end(&sets, &set_obj);
@@ -82,6 +66,5 @@ int main(int argc, char const *argv[]) {
     // Invoke composition again
     write_bson_http_request("/requests/composition_request", "http://127.0.0.1:8083/hot/c_test", doc);
     
-
   return 0;
 }

@@ -10,14 +10,14 @@ void write_http_request(const char *file_path, const char *url, const char *payl
     fprintf(llm_request, "%s", payload);
 }
 
-void write_bson_http_request(const char *file_path, const char *url, bson_t *doc) {
-    uint32_t len;
-    uint8_t *buf = bson_destroy_with_steal(doc, true, &len);
+void write_bson_http_request(const char *file_path, const char *url, bson_t *bson_doc) {
+    uint32_t bson_doc_len;
+    uint8_t *data = bson_destroy_with_steal(bson_doc, true, &bson_doc_len);
 
-    FILE *composition_request = fopen(file_path, "w+");
-    fprintf(composition_request, "POST %s HTTP/1.1\n", url);
-    fprintf(composition_request, "Content-Type: application/bson\n\n");
-    fwrite(buf, 1, len, composition_request);
+    FILE *composition_request_file = fopen(file_path, "w+");
+    fprintf(composition_request_file, "POST %s HTTP/1.1\n", url);
+    fprintf(composition_request_file, "Content-Type: application/bson\n\n");
+    fwrite(data, 1, bson_doc_len, composition_request_file);
 }
 
 int get_input_item(const char *input_path, char **item, size_t *input_len){
@@ -71,4 +71,10 @@ int extract_message_content(const char *llm_reply, const size_t llm_reply_len, c
         return ERR_LLM_REPLY_ERROR;
     }
     return SUCCESS;
+}
+
+void add_bson_item_data(const char * data, const char * identifier, bson_t * item){
+    BSON_APPEND_UTF8(item, "identifier", identifier);
+    BSON_APPEND_INT64(item, "key", 0);
+    BSON_APPEND_BINARY(item, "data", BSON_SUBTYPE_BINARY, (const uint8_t *)data, strlen(data));
 }
