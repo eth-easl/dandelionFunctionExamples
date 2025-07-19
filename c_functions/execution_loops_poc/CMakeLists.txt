@@ -7,6 +7,7 @@ set(AGENT3 "agent_3_process_composition_reply")
 add_executable(${AGENT1}
   agent_1_write_llm_request.c
   cJSON/cJSON.c
+  bson_shims.c
   DandelionAgentLib/DandelionAgentLib.c
 )
 
@@ -28,6 +29,7 @@ add_executable(${AGENT3}
 target_include_directories(${AGENT1} PRIVATE 
   cJSON
   DandelionAgentLib
+  /workspace/dandelion_bson_install/include/libbson-1.0
 )
 
 target_compile_options(${AGENT1} PRIVATE -static -Os -flto)

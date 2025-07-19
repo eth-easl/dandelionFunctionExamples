@@ -50,7 +50,7 @@ int main(int argc, char const *argv[]) {
 
     printf("Payload: %s\n", payload_str);
 
-    write_llm_request("/requests/llm_request", llm_endpoint, payload_str);
+    write_http_request("/requests/llm_request", llm_endpoint, payload_str);
   } else if (err_message_state == SUCCESS) {
     printf("Received message. Stopping after one iteration.\n");
   } else {

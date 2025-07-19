@@ -79,14 +79,9 @@ int main(int argc, char const *argv[]) {
     bson_append_document_end(&sets, &set_obj);
     bson_append_array_end(doc, &sets);
 
-    size_t len;
-    uint8_t *buf = bson_destroy_with_steal(doc, true, &len);
-
     // Invoke composition again
-    FILE *composition_request = fopen("/requests/composition_request", "w+");
-    fprintf(composition_request, "POST http://127.0.0.1:8083/hot/c_test HTTP/1.1\n");
-    fprintf(composition_request, "Content-Type: application/bson\n\n");
-    fwrite(buf, 1, len, composition_request);
+    write_bson_http_request("/requests/composition_request", "http://127.0.0.1:8083/hot/c_test", doc);
+    
 
   return 0;
 }

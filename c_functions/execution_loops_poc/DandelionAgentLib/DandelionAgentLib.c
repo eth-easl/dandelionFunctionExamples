@@ -1,12 +1,23 @@
 #include <stdio.h>
 #include "DandelionAgentLib.h"
 #include "cJSON.h"
+#include <bson/bson.h>
 
-void write_llm_request(const char *file_path, const char *llm_endpoint, const char *payload) {
-    FILE *llm_request = fopen("/requests/llm_request", "w+");
-    fprintf(llm_request, "POST %s HTTP/1.1\n", llm_endpoint);
+void write_http_request(const char *file_path, const char *url, const char *payload) {
+    FILE *llm_request = fopen(file_path, "w+");
+    fprintf(llm_request, "POST %s HTTP/1.1\n", url);
     fprintf(llm_request, "Content-Type: application/json\n\n");
     fprintf(llm_request, "%s", payload);
+}
+
+void write_bson_http_request(const char *file_path, const char *url, bson_t *doc) {
+    uint32_t len;
+    uint8_t *buf = bson_destroy_with_steal(doc, true, &len);
+
+    FILE *composition_request = fopen(file_path, "w+");
+    fprintf(composition_request, "POST %s HTTP/1.1\n", url);
+    fprintf(composition_request, "Content-Type: application/bson\n\n");
+    fwrite(buf, 1, len, composition_request);
 }
 
 int get_input_item(const char *input_path, char **item, size_t *input_len){
@@ -53,10 +64,10 @@ int extract_message_content(const char *llm_reply, const size_t llm_reply_len, c
             return ERR_LLM_REPLY_ERROR;
         }
         *llm_reply_content = cJSON_PrintUnformatted(content);
-        printf("LLM replied with content: %s\n", llm_reply_content);
+        printf("LLM replied with content: %s\n", *llm_reply_content);
     } else {
         *llm_reply_content = cJSON_Print(choices);
-        printf("LLM did not reply with content: %s\n", llm_reply_content);
+        printf("LLM did not reply with content: %s\n", *llm_reply_content);
         return ERR_LLM_REPLY_ERROR;
     }
     return SUCCESS;
