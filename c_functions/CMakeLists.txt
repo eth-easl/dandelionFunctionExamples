@@ -75,7 +75,7 @@ add_subdirectory(example_app_nolibc)
 # dependent on dlibc
 add_subdirectory(dirigent_busy)
 add_subdirectory(example_app)
-add_subdirectory(looping_app)
+add_subdirectory(execution_loops_poc)
 add_subdirectory(files)
 add_subdirectory(stdio)
 add_subdirectory(stdio_cxx)
