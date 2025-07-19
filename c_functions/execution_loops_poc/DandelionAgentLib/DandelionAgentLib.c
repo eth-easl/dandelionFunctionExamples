@@ -39,6 +39,29 @@ int get_input_item(const char *input_path, char **item, size_t *input_len){
     return SUCCESS;
 }
 
+int get_input_item_binary(const char *input_path, char **item, long *file_size){
+    FILE *compositon_reply_file = fopen(input_path, "r");
+    if (compositon_reply_file == NULL) {
+        perror("Failed to open file with composition_request\n");
+        return -1;
+    }
+    // Get composition reply file size
+    fseek(compositon_reply_file, 0, SEEK_END);
+    *file_size = ftell(compositon_reply_file);
+    rewind(compositon_reply_file);
+
+    // Read the file
+    *item = malloc(*file_size);
+    if (!*item) {
+        perror("Failed to allocate buffer for composition reply");
+        fclose(compositon_reply_file);
+        return -1;
+    }
+    fread(*item, 1, *file_size, compositon_reply_file);
+    fclose(compositon_reply_file);
+    return SUCCESS;
+}
+
 int extract_message_content(const char *llm_reply, const size_t llm_reply_len, char **llm_reply_content){
     // Parse the LLM reply JSON
     cJSON *parsed_json = cJSON_ParseWithLength(llm_reply, llm_reply_len);
@@ -79,33 +102,17 @@ void add_bson_item_data(const char * data, const char * identifier, bson_t * ite
     BSON_APPEND_BINARY(item, "data", BSON_SUBTYPE_BINARY, (const uint8_t *)data, strlen(data));
 }
 
-int get_input_item_bson(const char *input_path, char **item, long *file_size){
-    FILE *compositon_reply_file = fopen(input_path, "r");
-    if (compositon_reply_file == NULL) {
-        perror("Failed to open file with composition_request\n");
-        return -1;
+void get_binary_data_item_from_bson(const char *dot_path, const bson_t *bson_doc, const uint8_t **binary_data, uint32_t *binary_len){
+    bson_iter_t iter, desc;
+    bson_iter_init(&iter, bson_doc);
+    // https://mongoc.org/libbson/current/bson_iter_find_descendant.html
+    if (bson_iter_find_descendant(&iter, dot_path, &desc)) {
+        bson_subtype_t subtype;
+        bson_iter_binary(&desc, &subtype, binary_len, binary_data);
     }
-
-    // The composition reply is in BSON format, so need to read in binary. (getline breaks because it is not UTF-8)
-    // Get composition reply file size
-    fseek(compositon_reply_file, 0, SEEK_END);
-    *file_size = ftell(compositon_reply_file);
-    rewind(compositon_reply_file);
-
-    // Read the file
-    *item = malloc(*file_size);
-    if (!*item) {
-        perror("Failed to allocate buffer for composition reply");
-        fclose(compositon_reply_file);
-        return -1;
-    }
-    fread(*item, 1, *file_size, compositon_reply_file);
-    fclose(compositon_reply_file);
-    return SUCCESS;
 }
 
 void print_as_ascii(const char * data, const size_t data_len){
-    printf("Printing printable chars:\n");
     for (size_t i = 0; i < data_len; i++) {
         if (data[i] >= 32 && data[i] <= 126) {
             putchar(data[i]);
