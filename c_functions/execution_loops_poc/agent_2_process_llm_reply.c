@@ -15,28 +15,13 @@ int main(int argc, char const *argv[]) {
 
     printf("agent_2\n");
     char *llm_reply = NULL;
-    size_t llm_reply_len = 0;    // Load llm reply
+    size_t llm_reply_len = 0;
     int err_llm_reply = get_input_item("/responses/llm_request", &llm_reply, &llm_reply_len);
 
-    // Parse the LLM reply JSON
-    cJSON *parsed_json = cJSON_ParseWithLength(llm_reply, llm_reply_len);
-    if (parsed_json == NULL) {
-        fprintf(stderr, "Parsing the LLM reply JSON failed.\n");
+    char* llm_reply_content = NULL;
+    int err = extract_message_content(llm_reply, llm_reply_len, &llm_reply_content);
+    if (err != SUCCESS) {
         return -1;
-    }
-
-    char *llm_reply_content = NULL;
-    // Extract the content from the LLM reply
-    cJSON *choices = cJSON_GetObjectItem(parsed_json, "choices");
-    if (choices && cJSON_IsArray(choices)) {
-        cJSON *first_choice = cJSON_GetArrayItem(choices, 0);
-        cJSON *message = cJSON_GetObjectItem(first_choice, "message");
-        cJSON *content = cJSON_GetObjectItem(message, "content");
-        llm_reply_content = cJSON_PrintUnformatted(content);
-        printf("LLM replied with content: %s\n", llm_reply_content);
-    } else {
-        char *llm_reply_content = cJSON_Print(choices);
-        printf("LLM did not reply with content: %s\n", llm_reply_content);
     }
 
     // Start BSON document
