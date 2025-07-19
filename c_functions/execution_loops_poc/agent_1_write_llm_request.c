@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include "cJSON.h"
+#include "DandelionAgentLib.h"
 
 #include "unistd.h"
 
@@ -78,11 +79,7 @@ int main(int argc, char const *argv[]) {
 
     printf("Payload: %s\n", payload_str);
 
-    // Write LLM request
-    FILE *llm_request = fopen("/requests/llm_request", "w+");
-    fprintf(llm_request, "POST %s HTTP/1.1\n", llm_endpoint);
-    fprintf(llm_request, "Content-Type: application/json\n\n");
-    fprintf(llm_request, "%s", payload_str);
+    write_llm_request("/requests/llm_request", llm_endpoint, payload_str);
   }else{
     printf("Received message. Stopping after one iteration.\n");
   }
