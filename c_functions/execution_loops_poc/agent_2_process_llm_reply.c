@@ -7,25 +7,16 @@
 #include <sys/stat.h>
 #include "cJSON.h"
 #include <bson/bson.h>
+#include "DandelionAgentLib.h"
 
 #include "unistd.h"
 
 int main(int argc, char const *argv[]) {
 
     printf("agent_2\n");
-  
-    // Load llm reply
-    FILE *llm_reply_file = fopen("/responses/llm_request", "r");
-    if (llm_reply_file == NULL) {
-        perror("Failed to open file with llm reply");
-        return -1;
-    }
     char *llm_reply = NULL;
-    size_t llm_reply_len = 0;
-    if (__getline(&llm_reply, &llm_reply_len, llm_reply_file) < 0) {
-        perror("Failed to read line from llm reply file\n");
-        return -1;
-    }
+    size_t llm_reply_len = 0;    // Load llm reply
+    int err_llm_reply = get_input_item("/responses/llm_request", &llm_reply, &llm_reply_len);
 
     // Parse the LLM reply JSON
     cJSON *parsed_json = cJSON_ParseWithLength(llm_reply, llm_reply_len);
