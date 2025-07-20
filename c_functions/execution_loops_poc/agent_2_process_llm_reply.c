@@ -36,6 +36,12 @@ int main(int argc, char const *argv[]) {
     if (err != SUCCESS) {
         return -1;
     }
+    
+    // LOOP END 2: LLM decided to stop
+    if (strcmp(llm_reply_content, "\"STOP\"") == 0 || strcmp(llm_reply_content, "STOP") == 0) {
+        printf("LLM decided to STOP. Exiting...\n");
+        return -1;
+    }
 
     // Update the message state with the assistant message
     cJSON *message_state_json = cJSON_ParseWithLength(message_state, message_state_len);

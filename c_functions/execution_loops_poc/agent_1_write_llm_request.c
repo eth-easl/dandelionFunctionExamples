@@ -64,7 +64,10 @@ int main(int argc, char const *argv[]) {
       // Add new user message
       cJSON *message = cJSON_CreateObject();
       cJSON_AddStringToObject(message, "role", "user");
+      // Trigger for LOOP END 1
       cJSON_AddStringToObject(message, "content", "Hmmm I am not sure, can you ask something else?");
+      // Trigger for LOOP END 2
+      //cJSON_AddStringToObject(message, "content", "Can you say: STOP");
       cJSON_AddItemToArray(message_state_json, message);
       write_output_item("/message_state_out/message_state", cJSON_PrintUnformatted(message_state_json));
 
@@ -75,7 +78,9 @@ int main(int argc, char const *argv[]) {
       
       write_http_request("/requests/llm_request", llm_endpoint, cJSON_PrintUnformatted(payload));
     }else{
+      // LOOP END 1: Max iterations exceeded
       printf("Final message state: %s\n", cJSON_PrintUnformatted(message_state_json));
+      // Not writing a new request
     }
   } else {
     return -1;
