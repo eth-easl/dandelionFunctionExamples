@@ -13,7 +13,8 @@
 
 int main(int argc, char const *argv[]) {
 
-    printf("agent_3\n");
+    printf("function agent_3_process_composition_reply\n");
+    
     char *composition_response;
     long composition_response_lem;
     // The composition reply is in BSON format, so need to read in binary.

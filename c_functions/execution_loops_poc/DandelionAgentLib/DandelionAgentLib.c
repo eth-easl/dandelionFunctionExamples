@@ -90,7 +90,6 @@ int extract_message_content(const char *llm_reply, const size_t llm_reply_len, c
             return ERR_LLM_REPLY_ERROR;
         }
         *llm_reply_content = cJSON_PrintUnformatted(content);
-        printf("LLM replied with content: %s\n", *llm_reply_content);
     } else {
         *llm_reply_content = cJSON_Print(choices);
         printf("LLM did not reply with content: %s\n", *llm_reply_content);

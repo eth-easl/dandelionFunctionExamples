@@ -13,7 +13,8 @@
 
 int main(int argc, char const *argv[]) {
 
-    printf("agent_2\n");
+    printf("function agent_2_process_llm_reply\n");
+    
     char *llm_reply = NULL;
     char *message_state = NULL;
     char *llm_model = NULL;
@@ -97,7 +98,7 @@ int main(int argc, char const *argv[]) {
     bson_append_array_end(composition_request_doc, &sets);
 
     // Invoke composition again
-    const char * dandelion_server_composition_url = "http://127.0.0.1:8083/hot/c_test";
+    const char * dandelion_server_composition_url = "http://127.0.0.1:8083/hot/execution_loops";
     write_http_request_from_bson("/requests/composition_request", dandelion_server_composition_url, composition_request_doc);
     
   return 0;

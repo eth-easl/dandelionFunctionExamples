@@ -12,7 +12,7 @@
 
 int main(int argc, char const *argv[]) {
 
-  printf("agent_1\n");
+  printf("function agent_1_write_llm_request\n");
 
   char *llm_model = NULL;
   char *llm_endpoint = NULL;
@@ -79,7 +79,7 @@ int main(int argc, char const *argv[]) {
       write_http_request("/requests/llm_request", llm_endpoint, cJSON_PrintUnformatted(payload));
     }else{
       // LOOP END 1: Max iterations exceeded
-      printf("Final message state: %s\n", cJSON_PrintUnformatted(message_state_json));
+      printf("Final message state: %s\n", cJSON_Print(message_state_json));
       // Not writing a new request
     }
   } else {
