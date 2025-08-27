@@ -12,7 +12,7 @@ endif()
 set(PYTHON_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix for CPython")
 
 # Allow overriding the tag from the CLI: -DCPYTHON_TAG=<tag/commit>
-set(CPYTHON_TAG "3.13" CACHE STRING "CPython git tag/branch/commit")
+set(CPYTHON_TAG "3.12" CACHE STRING "CPython git tag/branch/commit")
 
 ExternalProject_Add(cpython
         PREFIX       "${CMAKE_BINARY_DIR}/cpython"
@@ -29,39 +29,37 @@ ExternalProject_Add(cpython
 
         # Apply your local patch after checkout/update
         PATCH_COMMAND
-        ${CMAKE_COMMAND} -E echo "Patching CPython with cpython-3.13.patch"
+        ${CMAKE_COMMAND} -E echo "Patching CPython with cpython-${CPYTHON_TAG}.patch"
         COMMAND
-        ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> patch -p1 -i "${CMAKE_CURRENT_SOURCE_DIR}/cpython-3.13.patch"
+        ${CMAKE_COMMAND} -E chdir <SOURCE_DIR> patch -p1 -i "${CMAKE_CURRENT_SOURCE_DIR}/cpython-${CPYTHON_TAG}.patch"
 
         # Configure step with environment variables
         CONFIGURE_COMMAND
         ${CMAKE_COMMAND} -E env
-        MODULE_MMAP_TRUE=\#
+        MODULE_MMAP_TRUE=#
         MODULE_BUILDTYPE=static
         CONFIG_SITE=${CMAKE_CURRENT_SOURCE_DIR}/config.site
-        CC=/workspaces/semester-project/dandelionFunctionExamples/c_functions/build/dandelion_sdk/x86_64-unknown-dandelion-clang
+        CC=<BINARY_DIR>/../../dandelion_sdk/x86_64-unknown-dandelion-clang
         CFLAGS=-g3\ -O0\ -femulated-tls
         HOST_CFLAGS=-Wno-unused-value\ -Wno-empty-body\ -Qunused-arguments
         LDFLAGS=-fuse-ld=lld
-        LDSHARED=/workspaces/semester-project/dandelionFunctionExamples/c_functions/build/dandelion_sdk/x86_64-unknown-dandelion-clang
+        LDSHARED=<BINARY_DIR>/../../dandelion_sdk/x86_64-unknown-dandelion-clang
         CCSHARED=
         <SOURCE_DIR>/configure
         --host=x86_64-unknown-linux
         --build=x86_64-linux-gnu
         --disable-ipv6
         --prefix=<INSTALL_DIR>
-        --with-build-python=/home/vscode/.pyenv/shims/python
+        --with-build-python=/usr/bin/python3
         --without-builtin-hashlib-hashes
         --disable-test-modules
         --with-openssl=/opt/libssl
         --with-pydebug
 
-        # Modify Modules/Setup.stdlib in the build directory
-        COMMAND
-        ${CMAKE_COMMAND} -E echo "Modifying Modules/Setup.stdlib in build directory"
-        COMMAND
-        ${CMAKE_COMMAND} -E chdir <BINARY_DIR> sed -i 's/^mmap mmapmodule.c/#mmap mmapmodule.c/' <BINARY_DIR>/Modules/Setup.stdlib
-
+        # inside ExternalProject_Add(...) after CONFIGURE_COMMAND
+        COMMAND ${CMAKE_COMMAND} -E echo "Modifying Modules/Setup.stdlib in build directory"
+        COMMAND ${CMAKE_COMMAND} -E chdir <BINARY_DIR>
+                sed -i -e "s/^mmap mmapmodule.c/#mmap mmapmodule.c/" Modules/Setup.stdlib
 
         BUILD_COMMAND   $(MAKE) -j${CMAKE_BUILD_PARALLEL_LEVEL}
         INSTALL_COMMAND $(MAKE) altinstall
