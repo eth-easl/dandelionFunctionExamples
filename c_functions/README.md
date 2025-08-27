@@ -16,7 +16,7 @@ To set this up use the following commands:
 ```
 mkdir build
 cd build
-cmake -DPLATFORM=<platform> -DARCHITECTURE=<target arch> -DCMAKE_BUILD_TYPE-<type> .
+cmake -DPLATFORM=<platform> -DARCHITECTURE=<target arch> -DCMAKE_BUILD_TYPE=<type> ../
 ```
 
 The platforms supported are `CHERI`, `MMU_FREEBSD`, `MMU_LINUX`, `KVM`, `WASM`, `DEBUG`. \

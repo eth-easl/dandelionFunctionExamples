@@ -27,7 +27,7 @@ endif()
 # setup build toolchain
 FetchContent_Declare(
   dandelion_sdk
-  DOWNLOAD_COMMAND gh release download latest -R eth-easl/dandelionFunctionInterface -p "*${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz"
+  DOWNLOAD_COMMAND gh release download experimental -R SleepyMorpheus/dandelionSDK -p "*${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz"
   COMMAND tar -xzf "dandelion_sdk_${CMAKE_BUILD_TYPE}_${PLATFORM}_${ARCHITECTURE}.tar.gz" -C ${CMAKE_BINARY_DIR}
 )
 FetchContent_MakeAvailable(dandelion_sdk)
@@ -79,6 +79,7 @@ add_subdirectory(stdio_cxx)
 add_subdirectory(compression)
 add_subdirectory(busy_libc)
 add_subdirectory(busy_hybrid)
+add_subdirectory(cpython)
 
 # set(CONFIG_FLAG "--config ${CMAKE_BINARY_DIR}/dandelion.cfg")
 # set(CONFIG_FLAGXX "--config ${CMAKE_BINARY_DIR}/dandelion++.cfg")
