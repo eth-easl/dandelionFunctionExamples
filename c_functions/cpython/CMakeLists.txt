@@ -14,6 +14,10 @@ set(PYTHON_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix for C
 # Allow overriding the tag from the CLI: -DCPYTHON_TAG=<tag/commit>
 set(CPYTHON_TAG "3.12" CACHE STRING "CPython git tag/branch/commit")
 
+set(FROZEN_MODULES_STRING
+"'<asyncio.*>', '<collections.*>', '<concurrent.*>', '<ctypes.*>', '<curses.*>', '<dbm.*>', '<email.*>', '<html.*>', '<http.*>', '<idlelib.*>', '<json.*>', '<logging.*>', '<multiprocessing.*>', '<pydoc_data.*>', '<sqlite3.*>', '<tkinter.*>', '<tomllib.*>', '<turtledemo.*>', '<urllib.*>', '<venv.*>', '<wsgiref.*>', '<xml.*>', '<xmlrpc.*>', '<zipfile.*>', '<zoneinfo.*>', '__future__', '_aix_support', '_compat_pickle', '_compression', '_markupbase', '_py_abc', '_pydatetime', '_pyio', '_pylong', '_strptime', '_threading_local', 'antigravity', 'argparse', 'ast', 'base64', 'bdb', 'bisect', 'bz2', 'cProfile', 'calendar', 'cmd', 'code', 'codeop', 'colorsys', 'compileall', 'configparser', 'contextlib', 'contextvars', 'copy', 'copyreg', 'csv', 'dataclasses', 'datetime', 'decimal', 'difflib', 'dis', 'enum', 'filecmp', 'fileinput', 'fnmatch', 'fractions', 'ftplib', 'functools', 'getopt', 'getpass', 'gettext', 'glob', 'graphlib', 'gzip', 'hashlib', 'heapq', 'hmac', 'imaplib', 'inspect', 'ipaddress', 'keyword', 'linecache', 'locale', 'lzma', 'mailbox', 'mimetypes', 'modulefinder', 'netrc', 'nturl2path', 'numbers', 'opcode', 'operator', 'optparse', 'pdb', 'pickle', 'pickletools', 'pkgutil', 'platform', 'plistlib', 'poplib', 'pprint', 'profile', 'pstats', 'pty', 'py_compile', 'pyclbr', 'pydoc', 'queue', 'quopri', 'random', 'reprlib', 'rlcompleter', 'sched', 'secrets', 'selectors', 'shelve', 'shlex', 'shutil', 'signal', 'smtplib', 'socket', 'socketserver', 'sre_compile', 'sre_constants', 'sre_parse', 'ssl', 'statistics', 'string', 'stringprep', 'struct', 'subprocess', 'symtable', 'tabnanny', 'tarfile', 'tempfile', 'textwrap', 'this', 'threading', 'timeit', 'token', 'tokenize', 'trace', 'traceback', 'tracemalloc', 'tty', 'turtle', 'types', 'typing', 'uuid', 'warnings',"
+)
+
 ExternalProject_Add(cpython
         PREFIX       "${CMAKE_BINARY_DIR}/cpython"
         SOURCE_DIR   "${CMAKE_BINARY_DIR}/cpython/src"
@@ -60,8 +64,16 @@ ExternalProject_Add(cpython
         COMMAND ${CMAKE_COMMAND} -E echo "Modifying Modules/Setup.stdlib in build directory"
         COMMAND ${CMAKE_COMMAND} -E chdir <BINARY_DIR>
                 sed -i -e "s/^mmap mmapmodule.c/#mmap mmapmodule.c/" Modules/Setup.stdlib
+        
+        COMMAND ${CMAKE_COMMAND} -E echo "Updating freeze_modules.py with frozen modules"
+        COMMAND ${CMAKE_COMMAND} -E chdir <SOURCE_DIR>
+        sed -i "s|#'<encodings.*>',|${FROZEN_MODULES_STRING}|g" Tools/build/freeze_modules.py
 
-        BUILD_COMMAND   $(MAKE) -j${CMAKE_BUILD_PARALLEL_LEVEL}
+        BUILD_COMMAND
+                /bin/sh -c "make -C <BINARY_DIR> -j${CMAKE_BUILD_PARALLEL_LEVEL} \
+                && make -C <BINARY_DIR> regen-frozen \
+                && make -C <BINARY_DIR> -j${CMAKE_BUILD_PARALLEL_LEVEL}"
+        
         INSTALL_COMMAND $(MAKE) altinstall
 
         # Helpful logging/TTY
