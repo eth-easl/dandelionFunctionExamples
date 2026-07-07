@@ -19,7 +19,7 @@ cd build
 cmake -DPLATFORM=<platform> -DARCHITECTURE=<target arch> -DCMAKE_BUILD_TYPE-<type> .
 ```
 
-The platforms supported are `CHERI`, `MMU_FREEBSD`, `MMU_LINUX`, `KVM`, `WASM`, `DEBUG`. \
+The platforms supported are `CHERI`, `MMU_FREEBSD`, `MMU_LINUX`, `KVM`, `DEBUG`. \
 We support `x86_64` and `aarch64` architectures. \
 The build type can be either `Debug` or `Release`.
 

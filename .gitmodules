@@ -1,3 +1,0 @@
-[submodule "wasm-compiler/rWasm"]
-	path = wasm-compiler/rWasm
-	url = https://github.com/eth-easl/rWasm
