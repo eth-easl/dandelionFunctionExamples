@@ -1,9 +1,0 @@
-# additional compiler flags
--idirafter${CMAKE_BINARY_DIR}/dandelion_sdk/include/c++/v1
-
-# additional linker flags
--lc++
--lc++abi
--lunwind
-
-@dandelion.cfg
